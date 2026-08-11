@@ -53,7 +53,7 @@
 
     <section
       class="hud"
-      aria-label="Información de la partida"
+      aria-label="Información y controles de la partida"
     >
 
 
@@ -63,28 +63,20 @@
         class="hud-item hud-level"
       >
 
-        <span
-          class="hud-label"
-        >
+        <span class="hud-label">
           Nivel
         </span>
 
 
-        <strong
-          class="hud-value"
-        >
+        <strong class="hud-value">
 
-          <span
-            id="level-number"
-          >
+          <span id="level-number">
             1
           </span>
 
           ·
 
-          <span
-            id="level-name"
-          >
+          <span id="level-name">
             Nivel 1
           </span>
 
@@ -95,13 +87,9 @@
 
       <!-- VIDAS -->
 
-      <div
-        class="hud-item"
-      >
+      <div class="hud-item">
 
-        <span
-          class="hud-label"
-        >
+        <span class="hud-label">
           Vidas
         </span>
 
@@ -117,13 +105,9 @@
 
       <!-- PINTADO -->
 
-      <div
-        class="hud-item"
-      >
+      <div class="hud-item">
 
-        <span
-          class="hud-label"
-        >
+        <span class="hud-label">
           Pintado
         </span>
 
@@ -139,13 +123,9 @@
 
       <!-- OBJETIVO -->
 
-      <div
-        class="hud-item"
-      >
+      <div class="hud-item">
 
-        <span
-          class="hud-label"
-        >
+        <span class="hud-label">
           Objetivo
         </span>
 
@@ -153,7 +133,7 @@
           id="target"
           class="hud-value"
         >
-          80%
+          85%
         </strong>
 
       </div>
@@ -161,13 +141,9 @@
 
       <!-- TIEMPO -->
 
-      <div
-        class="hud-item"
-      >
+      <div class="hud-item">
 
-        <span
-          class="hud-label"
-        >
+        <span class="hud-label">
           Tiempo
         </span>
 
@@ -177,6 +153,71 @@
         >
           90
         </strong>
+
+      </div>
+
+
+      <!-- ==================================================
+           CONTROLES DEL HUD
+           ================================================== -->
+
+      <div
+        class="hud-controls"
+        aria-label="Controles rápidos"
+      >
+
+
+        <!-- PAUSA -->
+
+        <button
+          id="pause"
+          class="hud-button"
+          type="button"
+          aria-label="Pausar juego"
+          title="Pausa"
+        >
+          ⏸
+        </button>
+
+
+        <!-- SONIDO -->
+
+        <button
+          id="mute"
+          class="hud-button"
+          type="button"
+          aria-label="Activar o silenciar sonido"
+          title="Sonido"
+        >
+          🔊
+        </button>
+
+
+        <!-- REINICIAR -->
+
+        <button
+          id="restart"
+          class="hud-button"
+          type="button"
+          aria-label="Reiniciar partida"
+          title="Reiniciar partida"
+        >
+          ↻
+        </button>
+
+
+        <!-- PANTALLA COMPLETA -->
+
+        <button
+          id="fullscreen"
+          class="hud-button"
+          type="button"
+          aria-label="Pantalla completa"
+          title="Pantalla completa"
+        >
+          ⛶
+        </button>
+
 
       </div>
 
@@ -220,55 +261,7 @@
 
 
     <!-- ==================================================
-         BARRA INFERIOR
-         ================================================== -->
-
-    <section
-      class="controls"
-      aria-label="Controles e instrucciones"
-    >
-
-
-      <!-- PAUSA -->
-
-      <button
-        id="pause"
-        type="button"
-      >
-        ⏸ Pausa
-      </button>
-
-
-      <!-- SONIDO -->
-
-      <button
-        id="mute"
-        type="button"
-      >
-        🔊 Sonido
-      </button>
-
-
-      <!-- REINICIAR -->
-
-      <button
-        id="restart"
-        type="button"
-      >
-        Reiniciar partida
-      </button>
-
-
-    </section>
-
-
-
-    <!-- ==================================================
          CRUCETA TÁCTIL
-
-         Está FUERA del tablero y FUERA de .controls.
-         El CSS la colocará en la zona negra
-         inferior derecha.
          ================================================== -->
 
     <div
