@@ -7,9 +7,9 @@ export const BUTTON_MODES = Object.freeze({
 });
 
 const BUTTON_TEXT = Object.freeze({
-  [BUTTON_MODES.RESTART]: "Reiniciar partida",
-  [BUTTON_MODES.NEXT_LEVEL]: "Siguiente nivel",
-  [BUTTON_MODES.RESTART_GAME]: "Volver a empezar"
+  [BUTTON_MODES.RESTART]: "↻",
+  [BUTTON_MODES.NEXT_LEVEL]: "▶",
+  [BUTTON_MODES.RESTART_GAME]: "↻"
 });
 
 let elements = null;
