@@ -363,9 +363,8 @@ and
 
   .app {
     width: min(
-      962px,
-      calc(100vw - 12px),
-      calc((100dvh - 128px) * 962 / 520)
+      calc(100vw - 190px),
+      calc((100dvh - 72px) * 962 / 520)
     );
   }
 
