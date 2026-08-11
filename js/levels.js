@@ -12,8 +12,8 @@ import {
 
 const LEVEL_COUNT = 100;
 
-const TARGET_PERCENT = 84;
-const ROUND_TIME = 90;
+const TARGET_PERCENT = 82;
+const ROUND_TIME = 100;
 const STARTING_LIVES = 3;
 
 const PLAYER_MOVE_INTERVAL = 0.075;
