@@ -120,20 +120,14 @@ const pauseButton =
 const muteButton =
   document.getElementById("mute");
 
+const fullscreenButton =
+  document.getElementById("fullscreen");
+
 
 /* =========================================================
    ESTADO LOCAL
    ========================================================= */
 
-/*
- * Estas variables no pertenecen al estado
- * del nivel.
- *
- * Solo controlan interfaz:
- *
- * - pantalla inicial
- * - pausa
- */
 let waitingToStart = false;
 let paused = false;
 
@@ -183,12 +177,12 @@ function refreshMuteButton() {
   ) {
 
     muteButton.textContent =
-      "🔇 Silenciado";
+      "🔇";
 
   } else {
 
     muteButton.textContent =
-      "🔊 Sonido";
+      "🔊";
   }
 }
 
@@ -198,6 +192,74 @@ function toggleSound() {
   toggleMuted();
 
   refreshMuteButton();
+}
+
+
+/* =========================================================
+   PANTALLA COMPLETA
+   ========================================================= */
+
+function refreshFullscreenButton() {
+
+  if (!fullscreenButton) {
+    return;
+  }
+
+
+  if (
+    document.fullscreenElement
+  ) {
+
+    fullscreenButton.textContent =
+      "🗗";
+
+    fullscreenButton.title =
+      "Salir de pantalla completa";
+
+    fullscreenButton.setAttribute(
+      "aria-label",
+      "Salir de pantalla completa"
+    );
+
+  } else {
+
+    fullscreenButton.textContent =
+      "⛶";
+
+    fullscreenButton.title =
+      "Pantalla completa";
+
+    fullscreenButton.setAttribute(
+      "aria-label",
+      "Pantalla completa"
+    );
+  }
+}
+
+
+async function toggleFullscreen() {
+
+  try {
+
+    if (
+      !document.fullscreenElement
+    ) {
+
+      await document.documentElement
+        .requestFullscreen();
+
+    } else {
+
+      await document.exitFullscreen();
+    }
+
+  } catch (error) {
+
+    console.warn(
+      "No se pudo cambiar el modo de pantalla completa.",
+      error
+    );
+  }
 }
 
 
@@ -217,7 +279,7 @@ function refreshPauseButton() {
   ) {
 
     pauseButton.textContent =
-      "⏸ Pausa";
+      "⏸";
 
     pauseButton.disabled = true;
 
@@ -230,7 +292,7 @@ function refreshPauseButton() {
   ) {
 
     pauseButton.textContent =
-      "⏸ Pausa";
+      "⏸";
 
     pauseButton.disabled = true;
 
@@ -246,12 +308,12 @@ function refreshPauseButton() {
   ) {
 
     pauseButton.textContent =
-      "▶ Continuar";
+      "▶";
 
   } else {
 
     pauseButton.textContent =
-      "⏸ Pausa";
+      "⏸";
   }
 }
 
@@ -270,6 +332,7 @@ function showPauseMessage() {
   messageElement.innerHTML = `
     <div>
       <div>⏸ PAUSA</div>
+
       <div
         style="
           margin-top: 14px;
@@ -342,13 +405,6 @@ function resumeGame() {
   enableInput();
 
 
-  /*
-   * Muy importante:
-   *
-   * evita que el tiempo que hemos estado
-   * pausados se convierta en un deltaTime
-   * gigante al continuar.
-   */
   gameState.lastFrameTime =
     performance.now();
 
@@ -392,6 +448,7 @@ function showStartScreen() {
 
     messageElement.innerHTML = `
       <div>
+
         <div>
           ESQUIVA Y PINTA
         </div>
@@ -418,6 +475,7 @@ function showStartScreen() {
         >
           ▶ Empezar
         </button>
+
       </div>
     `;
 
@@ -466,11 +524,17 @@ function startGame() {
 
   waitingToStart = false;
   paused = false;
-if (messageElement) {
-  messageElement.classList.remove(
-    "level-completed"
-  );
-}
+
+
+  if (
+    messageElement
+  ) {
+
+    messageElement.classList.remove(
+      "level-completed"
+    );
+  }
+
 
   hideMessage();
 
@@ -483,10 +547,6 @@ if (messageElement) {
     performance.now();
 
 
-  /*
-   * Empezamos desde exactamente
-   * 120 segundos.
-   */
   gameState.timerAccumulator = 0;
   gameState.moveAccumulator = 0;
 
@@ -521,6 +581,16 @@ async function loadLevel(
 
   waitingToStart = false;
   paused = false;
+
+
+  if (
+    messageElement
+  ) {
+
+    messageElement.classList.remove(
+      "level-completed"
+    );
+  }
 
 
   disableInput();
@@ -611,13 +681,6 @@ async function loadLevel(
   }
 
 
-  /*
-   * Solo la partida nueva espera
-   * al botón Empezar.
-   *
-   * Los siguientes niveles arrancan
-   * directamente.
-   */
   if (
     waitForStart
   ) {
@@ -787,10 +850,6 @@ function damagePlayer() {
   playHitSound();
 
 
-  /*
-   * La ampliación del rodillo
-   * desaparece al perder una vida.
-   */
   resetRollerPaintWidth();
 
 
@@ -972,10 +1031,6 @@ function update(
   deltaTime
 ) {
 
-  /*
-   * Ni la pantalla inicial ni la pausa
-   * permiten avanzar el juego.
-   */
   if (
     waitingToStart ||
     paused
@@ -1054,11 +1109,17 @@ function finishLevel() {
 
 
   disableInput();
-if (messageElement) {
-  messageElement.classList.add(
-    "level-completed"
-  );
-}
+
+
+  if (
+    messageElement
+  ) {
+
+    messageElement.classList.add(
+      "level-completed"
+    );
+  }
+
 
   if (
     hasNextLevel(
@@ -1122,10 +1183,6 @@ function loseGame(
   disableInput();
 
 
-  /*
-   * Al perder, Reiniciar partida
-   * vuelve SIEMPRE al nivel 1.
-   */
   setGameStatus(
     GAME_STATUS.LOST,
     BUTTON_MODES.RESTART_GAME
@@ -1154,13 +1211,6 @@ async function handleMainButton(
   mode
 ) {
 
-  /*
-   * SIGUIENTE NIVEL
-   *
-   * Conservamos vidas y ampliación.
-   *
-   * Arranca directamente.
-   */
   if (
     mode ===
     BUTTON_MODES.NEXT_LEVEL
@@ -1180,14 +1230,6 @@ async function handleMainButton(
   }
 
 
-  /*
-   * CUALQUIER REINICIO:
-   *
-   * Siempre vuelve al NIVEL 1.
-   *
-   * Además vuelve a mostrar
-   * la pantalla ▶ Empezar.
-   */
   await loadLevel(
     1,
     {
@@ -1314,14 +1356,38 @@ async function initializeGame() {
   }
 
 
-  refreshMuteButton();
+  /*
+   * Botón PANTALLA COMPLETA.
+   */
+  if (
+    fullscreenButton
+  ) {
+
+    fullscreenButton.addEventListener(
+      "click",
+      toggleFullscreen
+    );
+  }
 
 
   /*
-   * Nueva partida:
-   *
-   * carga nivel 1 pero NO comienza
-   * hasta pulsar ▶ Empezar.
+   * Si el usuario sale de pantalla completa
+   * mediante ESC o por el propio navegador,
+   * actualizamos también el icono.
+   */
+  document.addEventListener(
+    "fullscreenchange",
+    refreshFullscreenButton
+  );
+
+
+  refreshMuteButton();
+
+  refreshFullscreenButton();
+
+
+  /*
+   * Nueva partida.
    */
   await loadLevel(
     1,
