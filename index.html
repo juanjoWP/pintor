@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>Prototipo: Esquiva y pinta</title>
+
+
+  <link
+    rel="stylesheet"
+    href="css/main.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="css/board.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="css/roller.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="css/enemies.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="css/prizes.css"
+  >
+
+</head>
+
+
+<body>
+
+
+  <main class="app">
+
+
+    <!-- ==================================================
+         HUD
+         ================================================== -->
+
+    <section
+      class="hud"
+      aria-label="Información de la partida"
+    >
+
+
+      <!-- NIVEL -->
+
+      <div
+        class="hud-item hud-level"
+      >
+
+        <span
+          class="hud-label"
+        >
+          Nivel
+        </span>
+
+
+        <strong
+          class="hud-value"
+        >
+
+          <span
+            id="level-number"
+          >
+            1
+          </span>
+
+          ·
+
+          <span
+            id="level-name"
+          >
+            Nivel 1
+          </span>
+
+        </strong>
+
+      </div>
+
+
+      <!-- VIDAS -->
+
+      <div
+        class="hud-item"
+      >
+
+        <span
+          class="hud-label"
+        >
+          Vidas
+        </span>
+
+        <strong
+          id="lives"
+          class="hud-value"
+        >
+          3
+        </strong>
+
+      </div>
+
+
+      <!-- PINTADO -->
+
+      <div
+        class="hud-item"
+      >
+
+        <span
+          class="hud-label"
+        >
+          Pintado
+        </span>
+
+        <strong
+          id="percent"
+          class="hud-value"
+        >
+          0.0%
+        </strong>
+
+      </div>
+
+
+      <!-- OBJETIVO -->
+
+      <div
+        class="hud-item"
+      >
+
+        <span
+          class="hud-label"
+        >
+          Objetivo
+        </span>
+
+        <strong
+          id="target"
+          class="hud-value"
+        >
+          80%
+        </strong>
+
+      </div>
+
+
+      <!-- TIEMPO -->
+
+      <div
+        class="hud-item"
+      >
+
+        <span
+          class="hud-label"
+        >
+          Tiempo
+        </span>
+
+        <strong
+          id="time"
+          class="hud-value"
+        >
+          90
+        </strong>
+
+      </div>
+
+
+    </section>
+
+
+
+    <!-- ==================================================
+         TABLERO
+         ================================================== -->
+
+    <section
+      class="game-shell"
+      aria-label="Área de juego"
+    >
+
+
+      <canvas
+        id="game"
+        width="962"
+        height="520"
+        aria-label="Tablero del juego Esquiva y pinta"
+      ></canvas>
+
+
+      <!-- MENSAJES / INICIO / FIN DE NIVEL -->
+
+      <div
+        id="message"
+        class="message hidden"
+        role="status"
+        aria-live="assertive"
+        aria-atomic="true"
+        aria-hidden="true"
+      ></div>
+
+
+    </section>
+
+
+
+    <!-- ==================================================
+         BARRA INFERIOR
+         ================================================== -->
+
+    <section
+      class="controls"
+      aria-label="Controles e instrucciones"
+    >
+
+
+      <p>
+
+        <strong>
+          Movimiento:
+        </strong>
+
+        flechas o WASD.
+        Mueve el rodillo por los cuadros oscuros:
+        cada cuadro sin descubrir se pinta al pasar.
+        Esquiva las bolas rojas.
+
+      </p>
+
+
+      <!-- PAUSA -->
+
+      <button
+        id="pause"
+        type="button"
+      >
+        ⏸ Pausa
+      </button>
+
+
+      <!-- SONIDO -->
+
+      <button
+        id="mute"
+        type="button"
+      >
+        🔊 Sonido
+      </button>
+
+
+      <!-- REINICIAR -->
+
+      <button
+        id="restart"
+        type="button"
+      >
+        Reiniciar partida
+      </button>
+
+
+    </section>
+
+
+
+    <!-- ==================================================
+         CRUCETA TÁCTIL
+
+         Está FUERA del tablero y FUERA de .controls.
+         El CSS la colocará en la zona negra
+         inferior derecha.
+         ================================================== -->
+
+    <div
+      id="touch-controls"
+      class="touch-controls"
+      aria-label="Control de movimiento táctil"
+    >
+
+
+      <!-- ARRIBA -->
+
+      <button
+        id="touch-up"
+        class="touch-button touch-up"
+        type="button"
+        aria-label="Mover arriba"
+      >
+        ▲
+      </button>
+
+
+      <!-- IZQUIERDA -->
+
+      <button
+        id="touch-left"
+        class="touch-button touch-left"
+        type="button"
+        aria-label="Mover izquierda"
+      >
+        ◀
+      </button>
+
+
+      <!-- CENTRO -->
+
+      <div
+        class="touch-center"
+        aria-hidden="true"
+      >
+        ●
+      </div>
+
+
+      <!-- DERECHA -->
+
+      <button
+        id="touch-right"
+        class="touch-button touch-right"
+        type="button"
+        aria-label="Mover derecha"
+      >
+        ▶
+      </button>
+
+
+      <!-- ABAJO -->
+
+      <button
+        id="touch-down"
+        class="touch-button touch-down"
+        type="button"
+        aria-label="Mover abajo"
+      >
+        ▼
+      </button>
+
+
+    </div>
+
+
+  </main>
+
+
+
+  <!-- ==================================================
+       JAVASCRIPT
+       ================================================== -->
+
+  <script
+    type="module"
+    src="js/game.js"
+  ></script>
+
+
+</body>
+
+</html>

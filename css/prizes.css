@@ -1,0 +1,8 @@
+:root {
+  --prize-extra-life-color: #ff5b76;
+  --prize-extra-time-color: #66d9ff;
+  --prize-paint-boost-color: #ffd538;
+  --prize-invulnerability-color: #b693ff;
+}
+
+/* Reservado para futuros mensajes e indicadores HTML de premios. */

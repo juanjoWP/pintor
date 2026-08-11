@@ -1,0 +1,55 @@
+.game-shell {
+  position: relative;
+
+  width: 100%;
+  aspect-ratio: 962 / 520;
+
+  overflow: hidden;
+
+  border: 4px solid #ffcf31;
+
+  box-shadow:
+    0 0 0 4px #812600,
+    0 10px 28px #000a;
+
+  background: #05070d;
+}
+
+#game {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  image-rendering: pixelated;
+  touch-action: none;
+}
+
+.message {
+  position: absolute;
+  inset: 0;
+
+  display: grid;
+  place-items: center;
+
+  padding: 20px;
+
+  text-align: center;
+
+  font-size: clamp(
+    1.5rem,
+    5vw,
+    3.5rem
+  );
+
+  font-weight: 900;
+
+  text-shadow:
+    0 3px 0 #000;
+
+  background: #02040ab8;
+}
+/* Imagen más visible al completar un nivel */
+.message.level-completed {
+  background: rgba(2, 4, 10, 0.18);
+}
