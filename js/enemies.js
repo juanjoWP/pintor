@@ -8,6 +8,7 @@ import {
 
 import {
   areEnemiesFrozen,
+  areEnemiesSlowed,
   gameState
 } from "./state.js";
 
@@ -60,11 +61,43 @@ const FROZEN_STYLE = Object.freeze({
 
 
 /*
+ * Aspecto utilizado mientras
+ * está activa la ralentización.
+ */
+const SLOWED_STYLE = Object.freeze({
+  fill: "#8fd35f",
+  border: "#ffffff",
+  detail: "#efffdc"
+});
+
+
+/*
+ * El caracol reduce el movimiento
+ * al 50%.
+ *
+ * IMPORTANTE:
+ *
+ * No modificamos vx ni vy.
+ * Solo reducimos el deltaTime
+ * utilizado para mover al enemigo.
+ */
+const SLOW_SPEED_MULTIPLIER = 0.5;
+
+
+/*
  * Durante los últimos 3 segundos
  * los enemigos parpadean para avisar
  * de que van a volver a moverse.
  */
 const FREEZE_WARNING_TIME = 3;
+
+
+/*
+ * Durante los últimos 3 segundos
+ * del caracol también avisamos
+ * visualmente.
+ */
+const SLOW_WARNING_TIME = 3;
 
 
 /* =========================================================
@@ -480,8 +513,8 @@ export function updateEnemies(
    *
    * - no se mueven;
    * - no colisionan;
-   * - el parpadeo de los últimos
-   *   3 segundos es solamente visual.
+   * - la ralentización, si existe,
+   *   no puede hacerlos moverse.
    */
   if (
     areEnemiesFrozen()
@@ -494,6 +527,34 @@ export function updateEnemies(
   }
 
 
+  /*
+   * ZANCADILLA DEL CARACOL.
+   *
+   * Si el efecto está activo,
+   * utilizamos solamente la mitad
+   * del tiempo de movimiento.
+   *
+   * Ejemplo:
+   *
+   * velocidad real ×1.36
+   *
+   * durante el caracol:
+   *
+   * movimiento efectivo ×0.68
+   *
+   * Al terminar:
+   *
+   * vuelve automáticamente a ×1.36.
+   *
+   * vx y vy permanecen intactos.
+   */
+  const movementDeltaTime =
+    areEnemiesSlowed()
+      ? safeDeltaTime *
+        SLOW_SPEED_MULTIPLIER
+      : safeDeltaTime;
+
+
   for (
     const enemy
     of getEnemies()
@@ -501,7 +562,7 @@ export function updateEnemies(
 
     moveEnemy(
       enemy,
-      safeDeltaTime
+      movementDeltaTime
     );
 
 
@@ -732,13 +793,116 @@ function renderFrozenEnemy(
 
 
 /* =========================================================
+   EFECTO VISUAL DE RALENTIZACIÓN
+   ========================================================= */
+
+function renderSlowedEnemy(
+  context,
+  enemy
+) {
+
+  const pixelX =
+    enemy.x *
+    CELL_SIZE;
+
+
+  const pixelY =
+    enemy.y *
+    CELL_SIZE;
+
+
+  /*
+   * Ojo:
+   *
+   * renderBasicEnemy dibuja las bolas
+   * visualmente a ×2, así que usamos
+   * también ese radio para colocar
+   * correctamente el halo.
+   */
+  const pixelRadius =
+    enemy.radius *
+    CELL_SIZE *
+    2.0;
+
+
+  /*
+   * Cuerpo verde.
+   */
+  renderBasicEnemy(
+    context,
+    enemy,
+    SLOWED_STYLE
+  );
+
+
+  context.save();
+
+
+  /*
+   * Halo exterior.
+   */
+  context.beginPath();
+
+
+  context.arc(
+    pixelX,
+    pixelY,
+    pixelRadius + 4,
+    0,
+    Math.PI * 2
+  );
+
+
+  context.strokeStyle =
+    "#d7ff9c";
+
+
+  context.lineWidth = 2;
+
+
+  context.stroke();
+
+
+  /*
+   * Pequeña marca de caracol.
+   *
+   * No usamos esto para ninguna
+   * mecánica. Es únicamente visual.
+   */
+  context.fillStyle =
+    "#ffffff";
+
+
+  context.font =
+    `bold ${Math.max(
+      9,
+      CELL_SIZE * 0.40
+    )}px sans-serif`;
+
+
+  context.textAlign =
+    "center";
+
+
+  context.textBaseline =
+    "middle";
+
+
+  context.fillText(
+    "🐌",
+    pixelX,
+    pixelY
+  );
+
+
+  context.restore();
+}
+
+
+/* =========================================================
    AVISO DE DESCONGELACIÓN
    ========================================================= */
 
-/*
- * Devuelve true durante los últimos
- * 3 segundos de congelación.
- */
 function isFreezeWarningActive() {
 
   return (
@@ -774,6 +938,53 @@ function shouldShowNormalFreezeFrame() {
 
 
 /* =========================================================
+   AVISO DE FIN DE RALENTIZACIÓN
+   ========================================================= */
+
+function isSlowWarningActive() {
+
+  return (
+    gameState.enemySlowTime > 0 &&
+    gameState.enemySlowTime <=
+      SLOW_WARNING_TIME
+  );
+}
+
+
+/*
+ * Durante los últimos 3 segundos
+ * alternamos aproximadamente
+ * 4 veces por segundo entre:
+ *
+ * - aspecto normal;
+ * - aspecto ralentizado.
+ *
+ * IMPORTANTE:
+ *
+ * Esto solo cambia el dibujo.
+ * La velocidad continúa al 50%
+ * hasta que enemySlowTime llegue a 0.
+ */
+function shouldShowNormalSlowFrame() {
+
+  if (
+    !isSlowWarningActive()
+  ) {
+    return false;
+  }
+
+
+  return (
+    Math.floor(
+      gameState.enemySlowTime * 4
+    ) %
+    2 ===
+    0
+  );
+}
+
+
+/* =========================================================
    DIBUJO POR TIPO
    ========================================================= */
 
@@ -783,16 +994,11 @@ function renderEnemy(
 ) {
 
   /*
-   * Mientras están congelados:
+   * PRIORIDAD 1:
+   * CONGELACIÓN.
    *
-   * - normalmente se muestran azules;
-   *
-   * - durante los últimos 3 segundos
-   *   alternan azul / normal para avisar
-   *   de que van a despertar.
-   *
-   * El movimiento sigue completamente
-   * detenido durante todo el efecto.
+   * Si congelación y caracol coinciden,
+   * visualmente manda la congelación.
    */
   if (
     areEnemiesFrozen()
@@ -827,6 +1033,50 @@ function renderEnemy(
   }
 
 
+  /*
+   * PRIORIDAD 2:
+   * CARACOL.
+   */
+  if (
+    areEnemiesSlowed()
+  ) {
+
+    /*
+     * Durante los últimos 3 segundos
+     * alternamos entre normal y verde.
+     */
+    if (
+      shouldShowNormalSlowFrame()
+    ) {
+
+      const style =
+        getEnemyStyle(
+          enemy.type
+        );
+
+
+      renderBasicEnemy(
+        context,
+        enemy,
+        style
+      );
+
+    } else {
+
+      renderSlowedEnemy(
+        context,
+        enemy
+      );
+    }
+
+
+    return;
+  }
+
+
+  /*
+   * ASPECTO NORMAL.
+   */
   const style =
     getEnemyStyle(
       enemy.type
