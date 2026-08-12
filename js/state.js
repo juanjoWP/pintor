@@ -197,6 +197,17 @@ export const gameState = {
   enemyFreezeTime: 0,
 
 
+  /*
+   * Tiempo restante de
+   * ralentización de enemigos.
+   *
+   * Mientras sea > 0,
+   * enemies.js los moverá
+   * al 50% de su velocidad.
+   */
+  enemySlowTime: 0,
+
+
   /* -------------------------
      RODILLO
      ------------------------- */
@@ -262,16 +273,6 @@ export const gameState = {
    OBJETIVO SEGÚN EL RODILLO
    ========================================================= */
 
-/*
- * Actualiza automáticamente el porcentaje
- * necesario para completar el nivel.
- *
- * Rodillo normal:
- * usa el objetivo base del nivel.
- *
- * Rodillo ampliado:
- * mínimo 85%.
- */
 function updateTargetPercentForRoller() {
 
   if (
@@ -300,16 +301,6 @@ function updateTargetPercentForRoller() {
    REINICIO / CAMBIO DE NIVEL
    ========================================================= */
 
-/**
- * Carga el estado necesario para un nivel.
- *
- * preserveLives:
- * conserva las vidas al avanzar.
- *
- * preserveRollerUpgrade:
- * conserva la ampliación del rodillo
- * al avanzar de nivel.
- */
 export function resetStateForLevel(
   level,
   {
@@ -329,10 +320,6 @@ export function resetStateForLevel(
   }
 
 
-  /*
-   * Guardamos estos valores antes
-   * de reiniciar el nivel.
-   */
   const previousLives =
     gameState.lives;
 
@@ -365,14 +352,6 @@ export function resetStateForLevel(
   gameState.paintedPercent = 0;
 
 
-  /*
-   * Guardamos primero el objetivo
-   * NORMAL del nivel.
-   *
-   * Después, cuando sepamos si el
-   * rodillo está ampliado o no,
-   * calcularemos el objetivo real.
-   */
   gameState.baseTargetPercent =
     level.targetPercent ??
     DEFAULT_TARGET_PERCENT;
@@ -441,14 +420,6 @@ export function resetStateForLevel(
   }
 
 
-  /*
-   * Ahora que sabemos qué anchura
-   * tiene el rodillo, calculamos
-   * el objetivo real.
-   *
-   * Rodillo normal -> 80%
-   * Rodillo ampliado -> 85%
-   */
   updateTargetPercentForRoller();
 
 
@@ -496,6 +467,8 @@ export function resetStateForLevel(
 
   gameState.enemyFreezeTime = 0;
 
+  gameState.enemySlowTime = 0;
+
 
   /* -------------------------
      ESTADO
@@ -530,25 +503,6 @@ export function resetStateForLevel(
    PROGRESIÓN DE VELOCIDAD DE ENEMIGOS
    ========================================================= */
 
-/**
- * Reinicia la progresión de velocidad
- * a partir de un nivel concreto.
- *
- * Si no indicamos nivel, utiliza
- * automáticamente el nivel actual.
- *
- * Ejemplo:
- *
- * Nivel actual: 28
- *
- * resetEnemySpeedProgression()
- *
- * Resultado:
- *
- * Nivel 28 -> ×1.00
- * Nivel 29 -> ×1.06
- * Nivel 30 -> ×1.12
- */
 export function resetEnemySpeedProgression(
   levelNumber =
     gameState.currentLevel
@@ -586,11 +540,6 @@ export function resetEnemySpeedProgression(
 }
 
 
-/**
- * Devuelve el nivel desde el que
- * se está contando actualmente
- * el incremento de velocidad.
- */
 export function getEnemySpeedResetLevel() {
 
   return (
@@ -851,13 +800,6 @@ export function isPlayerInvulnerable() {
    CONGELACIÓN DE ENEMIGOS
    ========================================================= */
 
-/**
- * Activa la congelación.
- *
- * Si ya estaban congelados y queda
- * más tiempo del solicitado,
- * conservamos el tiempo mayor.
- */
 export function setEnemyFreeze(
   seconds
 ) {
@@ -886,9 +828,6 @@ export function setEnemyFreeze(
 }
 
 
-/**
- * Reduce el contador de congelación.
- */
 export function updateEnemyFreeze(
   deltaTime
 ) {
@@ -918,10 +857,6 @@ export function updateEnemyFreeze(
 }
 
 
-/**
- * Indica si los enemigos
- * están congelados.
- */
 export function areEnemiesFrozen() {
 
   return (
@@ -932,18 +867,102 @@ export function areEnemiesFrozen() {
 
 
 /* =========================================================
-   AMPLIACIÓN DEL RODILLO
+   RALENTIZACIÓN DE ENEMIGOS
    ========================================================= */
 
 /**
- * Aumenta en un nivel la anchura
- * del rodillo.
+ * Activa la ralentización.
  *
- * Máximo: 4.
+ * Si ya existe una ralentización con
+ * más tiempo restante, conservamos
+ * el tiempo mayor.
  *
- * En cuanto el rodillo queda ampliado,
- * el objetivo del nivel pasa a 85%.
+ * Ejemplo:
+ *
+ * quedan 6 segundos
+ * coges otro caracol de 10
+ * -> pasa a 10 segundos
+ *
+ * No se acumulan 16.
  */
+export function setEnemySlow(
+  seconds
+) {
+
+  const safeSeconds =
+    Number.isFinite(
+      seconds
+    )
+      ? Math.max(
+          0,
+          seconds
+        )
+      : 0;
+
+
+  gameState.enemySlowTime =
+    Math.max(
+      gameState.enemySlowTime,
+      safeSeconds
+    );
+
+
+  return (
+    gameState.enemySlowTime
+  );
+}
+
+
+/**
+ * Reduce el tiempo restante
+ * de ralentización.
+ */
+export function updateEnemySlow(
+  deltaTime
+) {
+
+  const safeDelta =
+    Number.isFinite(
+      deltaTime
+    )
+      ? Math.max(
+          0,
+          deltaTime
+        )
+      : 0;
+
+
+  gameState.enemySlowTime =
+    Math.max(
+      0,
+      gameState.enemySlowTime -
+        safeDelta
+    );
+
+
+  return (
+    gameState.enemySlowTime
+  );
+}
+
+
+/**
+ * Indica si el efecto del
+ * caracol sigue activo.
+ */
+export function areEnemiesSlowed() {
+
+  return (
+    gameState.enemySlowTime >
+    0
+  );
+}
+
+
+/* =========================================================
+   AMPLIACIÓN DEL RODILLO
+   ========================================================= */
+
 export function upgradeRollerPaintWidth(
   amount = 1
 ) {
@@ -969,11 +988,6 @@ export function upgradeRollerPaintWidth(
     );
 
 
-  /*
-   * Una ampliación, dos o tres:
-   * mientras el rodillo sea mayor
-   * que 1, el objetivo será 85%.
-   */
   updateTargetPercentForRoller();
 
 
@@ -983,27 +997,12 @@ export function upgradeRollerPaintWidth(
 }
 
 
-/**
- * El jugador ha perdido una vida.
- *
- * La ampliación desaparece
- * completamente.
- *
- * Al volver el rodillo a tamaño normal,
- * el objetivo vuelve también al
- * porcentaje base del nivel.
- */
 export function resetRollerPaintWidth() {
 
   gameState.rollerPaintWidth =
     DEFAULT_ROLLER_PAINT_WIDTH;
 
 
-  /*
-   * Por ejemplo:
-   *
-   * 85% -> 80%
-   */
   updateTargetPercentForRoller();
 
 
@@ -1013,9 +1012,6 @@ export function resetRollerPaintWidth() {
 }
 
 
-/**
- * Devuelve la anchura actual.
- */
 export function getRollerPaintWidth() {
 
   return (
