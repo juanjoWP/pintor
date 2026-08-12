@@ -10,7 +10,7 @@ import {
 } from "./config.js";
 
 
-const DEFAULT_INVULNERABILITY_DURATION = 1.5;
+const DEFAULT_INVULNERABILITY_DURATION = 3;
 
 
 /*
@@ -20,6 +20,19 @@ const DEFAULT_INVULNERABILITY_DURATION = 1.5;
  */
 const DEFAULT_ROLLER_PAINT_WIDTH = 1;
 const MAX_ROLLER_PAINT_WIDTH = 4;
+
+
+/*
+ * Si el rodillo está ampliado,
+ * el objetivo del nivel aumenta.
+ *
+ * Rodillo normal:
+ * objetivo base del nivel -> 80%
+ *
+ * Rodillo ampliado:
+ * objetivo -> 85%
+ */
+const EXPANDED_ROLLER_TARGET_PERCENT = 85;
 
 
 /* =========================================================
@@ -93,6 +106,22 @@ export const gameState = {
 
   paintedPercent: 0,
 
+
+  /*
+   * Objetivo base del nivel.
+   *
+   * Normalmente será 80%.
+   */
+  baseTargetPercent:
+    DEFAULT_TARGET_PERCENT,
+
+
+  /*
+   * Objetivo real actual.
+   *
+   * Puede subir a 85% si
+   * el rodillo está ampliado.
+   */
   targetPercent:
     DEFAULT_TARGET_PERCENT,
 
@@ -230,6 +259,44 @@ export const gameState = {
 
 
 /* =========================================================
+   OBJETIVO SEGÚN EL RODILLO
+   ========================================================= */
+
+/*
+ * Actualiza automáticamente el porcentaje
+ * necesario para completar el nivel.
+ *
+ * Rodillo normal:
+ * usa el objetivo base del nivel.
+ *
+ * Rodillo ampliado:
+ * mínimo 85%.
+ */
+function updateTargetPercentForRoller() {
+
+  if (
+    gameState.rollerPaintWidth >
+    DEFAULT_ROLLER_PAINT_WIDTH
+  ) {
+
+    gameState.targetPercent =
+      Math.max(
+        gameState.baseTargetPercent,
+        EXPANDED_ROLLER_TARGET_PERCENT
+      );
+
+  } else {
+
+    gameState.targetPercent =
+      gameState.baseTargetPercent;
+  }
+
+
+  return gameState.targetPercent;
+}
+
+
+/* =========================================================
    REINICIO / CAMBIO DE NIVEL
    ========================================================= */
 
@@ -298,7 +365,15 @@ export function resetStateForLevel(
   gameState.paintedPercent = 0;
 
 
-  gameState.targetPercent =
+  /*
+   * Guardamos primero el objetivo
+   * NORMAL del nivel.
+   *
+   * Después, cuando sepamos si el
+   * rodillo está ampliado o no,
+   * calcularemos el objetivo real.
+   */
+  gameState.baseTargetPercent =
     level.targetPercent ??
     DEFAULT_TARGET_PERCENT;
 
@@ -364,6 +439,17 @@ export function resetStateForLevel(
     gameState.rollerPaintWidth =
       DEFAULT_ROLLER_PAINT_WIDTH;
   }
+
+
+  /*
+   * Ahora que sabemos qué anchura
+   * tiene el rodillo, calculamos
+   * el objetivo real.
+   *
+   * Rodillo normal -> 80%
+   * Rodillo ampliado -> 85%
+   */
+  updateTargetPercentForRoller();
 
 
   /* -------------------------
@@ -854,6 +940,9 @@ export function areEnemiesFrozen() {
  * del rodillo.
  *
  * Máximo: 4.
+ *
+ * En cuanto el rodillo queda ampliado,
+ * el objetivo del nivel pasa a 85%.
  */
 export function upgradeRollerPaintWidth(
   amount = 1
@@ -880,6 +969,14 @@ export function upgradeRollerPaintWidth(
     );
 
 
+  /*
+   * Una ampliación, dos o tres:
+   * mientras el rodillo sea mayor
+   * que 1, el objetivo será 85%.
+   */
+  updateTargetPercentForRoller();
+
+
   return (
     gameState.rollerPaintWidth
   );
@@ -891,11 +988,23 @@ export function upgradeRollerPaintWidth(
  *
  * La ampliación desaparece
  * completamente.
+ *
+ * Al volver el rodillo a tamaño normal,
+ * el objetivo vuelve también al
+ * porcentaje base del nivel.
  */
 export function resetRollerPaintWidth() {
 
   gameState.rollerPaintWidth =
     DEFAULT_ROLLER_PAINT_WIDTH;
+
+
+  /*
+   * Por ejemplo:
+   *
+   * 85% -> 80%
+   */
+  updateTargetPercentForRoller();
 
 
   return (
