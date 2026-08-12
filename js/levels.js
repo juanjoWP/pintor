@@ -19,7 +19,7 @@ const STARTING_LIVES = 3;
 const PLAYER_MOVE_INTERVAL = 0.075;
 
 const ENEMY_COLLISION_DAMAGE = 1;
-const INVULNERABILITY_DURATION = 1.5;
+const INVULNERABILITY_DURATION = 3.0;
 
 
 /* =========================================================
