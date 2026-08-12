@@ -111,6 +111,17 @@ if (!context) {
 }
 
 
+/*
+ * Área completa del tablero.
+ *
+ * Escuchamos aquí el toque para pasar
+ * de nivel porque #message está situado
+ * encima del canvas.
+ */
+const gameShell =
+  canvas.closest(".game-shell");
+
+
 const messageElement =
   document.getElementById("message");
 
@@ -130,6 +141,21 @@ const fullscreenButton =
 
 let waitingToStart = false;
 let paused = false;
+
+
+/*
+ * Control del toque para pasar
+ * al siguiente nivel.
+ *
+ * Al terminar:
+ *
+ * 1. Esperamos 2 segundos.
+ * 2. Permitimos tocar el tablero.
+ * 3. Un solo toque puede cargar el nivel.
+ */
+let levelAdvanceReady = false;
+let levelAdvanceInProgress = false;
+let levelAdvanceTimeout = null;
 
 
 /* =========================================================
@@ -429,6 +455,124 @@ function togglePause() {
 
 
 /* =========================================================
+   CONTINUAR AL TOCAR EL TABLERO
+   ========================================================= */
+
+/*
+ * Cancela cualquier permiso o temporizador
+ * pendiente para avanzar de nivel.
+ */
+function resetLevelAdvanceTouch() {
+
+  levelAdvanceReady = false;
+  levelAdvanceInProgress = false;
+
+
+  if (
+    levelAdvanceTimeout !== null
+  ) {
+
+    clearTimeout(
+      levelAdvanceTimeout
+    );
+
+    levelAdvanceTimeout = null;
+  }
+}
+
+
+/*
+ * Después de completar un nivel esperamos
+ * 2 segundos antes de permitir continuar.
+ */
+function prepareLevelAdvanceTouch() {
+
+  resetLevelAdvanceTouch();
+
+
+  levelAdvanceTimeout =
+    setTimeout(
+      () => {
+
+        levelAdvanceTimeout = null;
+
+        levelAdvanceReady = true;
+
+
+        /*
+         * Añadimos la instrucción solamente
+         * cuando ya se puede continuar.
+         */
+        if (
+          messageElement
+        ) {
+
+          messageElement.textContent =
+            `¡Nivel completado! Has pintado el ${gameState.targetPercent}%. Toca el tablero para continuar.`;
+        }
+
+      },
+      2000
+    );
+}
+
+
+/*
+ * Se ejecuta únicamente cuando se toca
+ * el área del tablero.
+ *
+ * La cruceta y el HUD están fuera de
+ * .game-shell, por lo que no pueden
+ * provocar accidentalmente el salto.
+ */
+async function handleBoardPointerDown(
+  event
+) {
+
+  if (
+    !levelAdvanceReady ||
+    levelAdvanceInProgress
+  ) {
+    return;
+  }
+
+
+  /*
+   * Solo tiene sentido avanzar si
+   * realmente existe otro nivel.
+   */
+  if (
+    !hasNextLevel(
+      gameState.currentLevel
+    )
+  ) {
+    return;
+  }
+
+
+  event.preventDefault();
+
+
+  /*
+   * Bloqueamos inmediatamente nuevos
+   * toques para impedir una doble carga.
+   */
+  levelAdvanceReady = false;
+  levelAdvanceInProgress = true;
+
+
+  await loadLevel(
+    gameState.currentLevel + 1,
+    {
+      preserveLives: true,
+      preserveRollerUpgrade: true,
+      waitForStart: false
+    }
+  );
+}
+
+
+/* =========================================================
    PANTALLA INICIAL
    ========================================================= */
 
@@ -436,6 +580,9 @@ function showStartScreen() {
 
   waitingToStart = true;
   paused = false;
+
+
+  resetLevelAdvanceTouch();
 
 
   clearInput();
@@ -526,6 +673,9 @@ function startGame() {
   paused = false;
 
 
+  resetLevelAdvanceTouch();
+
+
   if (
     messageElement
   ) {
@@ -577,6 +727,13 @@ async function loadLevel(
   if (!level) {
     return false;
   }
+
+
+  /*
+   * Al cargar cualquier nivel ya no debe
+   * quedar activo el toque del anterior.
+   */
+  resetLevelAdvanceTouch();
 
 
   waitingToStart = false;
@@ -1133,6 +1290,10 @@ function finishLevel() {
     );
 
 
+    /*
+     * Conservamos temporalmente el botón
+     * como respaldo durante esta prueba.
+     */
     setButtonMode(
       BUTTON_MODES.NEXT_LEVEL
     );
@@ -1143,11 +1304,27 @@ function finishLevel() {
     );
 
 
+    /*
+     * El tablero NO podrá avanzar
+     * inmediatamente.
+     *
+     * Hay que esperar 2 segundos.
+     */
+    prepareLevelAdvanceTouch();
+
+
     refreshPauseButton();
 
 
     return;
   }
+
+
+  /*
+   * Si hemos completado todos los niveles,
+   * no se activa el toque de continuación.
+   */
+  resetLevelAdvanceTouch();
 
 
   setGameStatus(
@@ -1178,6 +1355,13 @@ function loseGame(
 
   waitingToStart = false;
   paused = false;
+
+
+  /*
+   * Si perdemos nunca debe quedar
+   * habilitado un toque de continuación.
+   */
+  resetLevelAdvanceTouch();
 
 
   disableInput();
@@ -1371,10 +1555,25 @@ async function initializeGame() {
 
 
   /*
-   * Si el usuario sale de pantalla completa
-   * mediante ESC o por el propio navegador,
-   * actualizamos también el icono.
+   * TOCAR EL TABLERO PARA CONTINUAR.
+   *
+   * Pointer Events funcionan con:
+   *
+   * - dedo
+   * - ratón
+   * - stylus
    */
+  if (
+    gameShell
+  ) {
+
+    gameShell.addEventListener(
+      "pointerdown",
+      handleBoardPointerDown
+    );
+  }
+
+
   document.addEventListener(
     "fullscreenchange",
     refreshFullscreenButton
