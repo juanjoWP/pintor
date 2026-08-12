@@ -59,6 +59,14 @@ const FROZEN_STYLE = Object.freeze({
 });
 
 
+/*
+ * Durante los últimos 3 segundos
+ * los enemigos parpadean para avisar
+ * de que van a volver a moverse.
+ */
+const FREEZE_WARNING_TIME = 3;
+
+
 /* =========================================================
    UTILIDADES
    ========================================================= */
@@ -468,11 +476,12 @@ export function updateEnemies(
 
 
   /*
-   * Seguridad adicional.
+   * Mientras están congelados:
    *
-   * game.js ya evita llamar a esta
-   * función durante la congelación,
-   * pero enemies.js también se protege.
+   * - no se mueven;
+   * - no colisionan;
+   * - el parpadeo de los últimos
+   *   3 segundos es solamente visual.
    */
   if (
     areEnemiesFrozen()
@@ -567,10 +576,17 @@ function renderBasicEnemy(
     CELL_SIZE;
 
 
-const pixelRadius =
-  enemy.radius *
-  CELL_SIZE *
-  2.0;
+  /*
+   * Tamaño visual ×2.
+   *
+   * No afecta al radio lógico
+   * utilizado para colisiones.
+   */
+  const pixelRadius =
+    enemy.radius *
+    CELL_SIZE *
+    2.0;
+
 
   context.beginPath();
 
@@ -716,6 +732,48 @@ function renderFrozenEnemy(
 
 
 /* =========================================================
+   AVISO DE DESCONGELACIÓN
+   ========================================================= */
+
+/*
+ * Devuelve true durante los últimos
+ * 3 segundos de congelación.
+ */
+function isFreezeWarningActive() {
+
+  return (
+    gameState.enemyFreezeTime > 0 &&
+    gameState.enemyFreezeTime <=
+      FREEZE_WARNING_TIME
+  );
+}
+
+
+/*
+ * Durante el aviso alternamos
+ * aproximadamente 4 veces por segundo
+ * entre aspecto normal y congelado.
+ */
+function shouldShowNormalFreezeFrame() {
+
+  if (
+    !isFreezeWarningActive()
+  ) {
+    return false;
+  }
+
+
+  return (
+    Math.floor(
+      gameState.enemyFreezeTime * 4
+    ) %
+    2 ===
+    0
+  );
+}
+
+
+/* =========================================================
    DIBUJO POR TIPO
    ========================================================= */
 
@@ -725,17 +783,45 @@ function renderEnemy(
 ) {
 
   /*
-   * Mientras están congelados
-   * todos utilizan el aspecto hielo.
+   * Mientras están congelados:
+   *
+   * - normalmente se muestran azules;
+   *
+   * - durante los últimos 3 segundos
+   *   alternan azul / normal para avisar
+   *   de que van a despertar.
+   *
+   * El movimiento sigue completamente
+   * detenido durante todo el efecto.
    */
   if (
     areEnemiesFrozen()
   ) {
 
-    renderFrozenEnemy(
-      context,
-      enemy
-    );
+    if (
+      shouldShowNormalFreezeFrame()
+    ) {
+
+      const style =
+        getEnemyStyle(
+          enemy.type
+        );
+
+
+      renderBasicEnemy(
+        context,
+        enemy,
+        style
+      );
+
+    } else {
+
+      renderFrozenEnemy(
+        context,
+        enemy
+      );
+    }
+
 
     return;
   }
