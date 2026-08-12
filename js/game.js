@@ -72,11 +72,8 @@ import {
 } from "./levels.js";
 
 import {
-  BUTTON_MODES,
   hideMessage,
   initializeHud,
-  setButtonMode,
-  setMainButtonHandler,
   showDefeat,
   showGameCompleted,
   showLevelCompleted,
@@ -458,10 +455,6 @@ function togglePause() {
    CONTINUAR AL TOCAR EL TABLERO
    ========================================================= */
 
-/*
- * Cancela cualquier permiso o temporizador
- * pendiente para avanzar de nivel.
- */
 function resetLevelAdvanceTouch() {
 
   levelAdvanceReady = false;
@@ -499,16 +492,12 @@ function prepareLevelAdvanceTouch() {
         levelAdvanceReady = true;
 
 
-        /*
-         * Añadimos la instrucción solamente
-         * cuando ya se puede continuar.
-         */
         if (
           messageElement
         ) {
 
           messageElement.textContent =
-            `¡Nivel completado!  Toca para continuar.`;
+            "¡Nivel completado! Toca para continuar.";
         }
 
       },
@@ -518,12 +507,10 @@ function prepareLevelAdvanceTouch() {
 
 
 /*
- * Se ejecuta únicamente cuando se toca
- * el área del tablero.
+ * Solo el tablero puede provocar
+ * el cambio al siguiente nivel.
  *
- * La cruceta y el HUD están fuera de
- * .game-shell, por lo que no pueden
- * provocar accidentalmente el salto.
+ * HUD y cruceta están fuera de game-shell.
  */
 async function handleBoardPointerDown(
   event
@@ -537,10 +524,6 @@ async function handleBoardPointerDown(
   }
 
 
-  /*
-   * Solo tiene sentido avanzar si
-   * realmente existe otro nivel.
-   */
   if (
     !hasNextLevel(
       gameState.currentLevel
@@ -554,8 +537,8 @@ async function handleBoardPointerDown(
 
 
   /*
-   * Bloqueamos inmediatamente nuevos
-   * toques para impedir una doble carga.
+   * Bloqueamos inmediatamente cualquier
+   * segundo toque.
    */
   levelAdvanceReady = false;
   levelAdvanceInProgress = true;
@@ -730,8 +713,8 @@ async function loadLevel(
 
 
   /*
-   * Al cargar cualquier nivel ya no debe
-   * quedar activo el toque del anterior.
+   * Cancelamos cualquier toque pendiente
+   * del nivel anterior.
    */
   resetLevelAdvanceTouch();
 
@@ -780,7 +763,7 @@ async function loadLevel(
 
 
   /* -------------------------
-     Fondo
+     FONDO
      ------------------------- */
 
   clearBoardImage();
@@ -806,7 +789,7 @@ async function loadLevel(
 
 
   /* -------------------------
-     Preparar nivel
+     PREPARAR NIVEL
      ------------------------- */
 
   gameState.lastFrameTime =
@@ -818,11 +801,6 @@ async function loadLevel(
 
 
   clearInput();
-
-
-  setButtonMode(
-    BUTTON_MODES.RESTART
-  );
 
 
   refreshHud();
@@ -1284,31 +1262,24 @@ function finishLevel() {
     )
   ) {
 
-    setGameStatus(
-      GAME_STATUS.WON,
-      BUTTON_MODES.NEXT_LEVEL
-    );
-
-
     /*
-     * Conservamos temporalmente el botón
-     * como respaldo durante esta prueba.
-     */
-    setButtonMode(
-      BUTTON_MODES.NEXT_LEVEL
-    );
-
-
-    showLevelCompleted(
-      gameState.targetPercent
-    );
-
-
-    /*
-     * El tablero NO podrá avanzar
-     * inmediatamente.
+     * Ya no existe botón para pasar
+     * al siguiente nivel.
      *
-     * Hay que esperar 2 segundos.
+     * El cambio se realiza tocando
+     * directamente el tablero.
+     */
+    setGameStatus(
+      GAME_STATUS.WON
+    );
+
+
+    showLevelCompleted();
+
+
+    /*
+     * Esperamos 2 segundos antes de
+     * aceptar el toque.
      */
     prepareLevelAdvanceTouch();
 
@@ -1321,20 +1292,13 @@ function finishLevel() {
 
 
   /*
-   * Si hemos completado todos los niveles,
-   * no se activa el toque de continuación.
+   * Todos los niveles completados.
    */
   resetLevelAdvanceTouch();
 
 
   setGameStatus(
-    GAME_STATUS.COMPLETED,
-    BUTTON_MODES.RESTART_GAME
-  );
-
-
-  setButtonMode(
-    BUTTON_MODES.RESTART_GAME
+    GAME_STATUS.COMPLETED
   );
 
 
@@ -1357,10 +1321,6 @@ function loseGame(
   paused = false;
 
 
-  /*
-   * Si perdemos nunca debe quedar
-   * habilitado un toque de continuación.
-   */
   resetLevelAdvanceTouch();
 
 
@@ -1368,13 +1328,7 @@ function loseGame(
 
 
   setGameStatus(
-    GAME_STATUS.LOST,
-    BUTTON_MODES.RESTART_GAME
-  );
-
-
-  setButtonMode(
-    BUTTON_MODES.RESTART_GAME
+    GAME_STATUS.LOST
   );
 
 
@@ -1384,44 +1338,6 @@ function loseGame(
 
 
   refreshPauseButton();
-}
-
-
-/* =========================================================
-   BOTÓN PRINCIPAL
-   ========================================================= */
-
-async function handleMainButton(
-  mode
-) {
-
-  if (
-    mode ===
-    BUTTON_MODES.NEXT_LEVEL
-  ) {
-
-    await loadLevel(
-      gameState.currentLevel + 1,
-      {
-        preserveLives: true,
-        preserveRollerUpgrade: true,
-        waitForStart: false
-      }
-    );
-
-
-    return;
-  }
-
-
-  await loadLevel(
-    1,
-    {
-      preserveLives: false,
-      preserveRollerUpgrade: false,
-      waitForStart: true
-    }
-  );
 }
 
 
@@ -1507,11 +1423,6 @@ async function initializeGame() {
   initializeInput();
 
 
-  setMainButtonHandler(
-    handleMainButton
-  );
-
-
   /*
    * Botón PAUSA.
    */
@@ -1557,7 +1468,7 @@ async function initializeGame() {
   /*
    * TOCAR EL TABLERO PARA CONTINUAR.
    *
-   * Pointer Events funcionan con:
+   * Funciona con:
    *
    * - dedo
    * - ratón
@@ -1586,7 +1497,7 @@ async function initializeGame() {
 
 
   /*
-   * Nueva partida.
+   * NUEVA PARTIDA
    */
   await loadLevel(
     1,
