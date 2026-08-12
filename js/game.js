@@ -12,10 +12,12 @@ import {
   addTime,
   areEnemiesFrozen,
   gameState,
+  getEnemySpeedResetLevel,
   isGameRunning,
   isPlayerInvulnerable,
   removeLives,
   removeTime,
+  resetEnemySpeedProgression,
   resetRollerPaintWidth,
   resetStateForLevel,
   setEnemyFreeze,
@@ -86,6 +88,47 @@ import {
 
 
 /* =========================================================
+   DIFICULTAD DINÁMICA
+   ========================================================= */
+
+/*
+ * Cada nivel superado desde el último
+ * reinicio aumenta la velocidad un 6%.
+ */
+const ENEMY_SPEED_INCREASE_PER_LEVEL =
+  0.06;
+
+
+/*
+ * Conservamos un techo de seguridad.
+ *
+ * Normalmente el jugador perderá una vida
+ * y reiniciará la progresión mucho antes.
+ */
+const MAX_ENEMY_SPEED_MULTIPLIER =
+  3.5;
+
+
+/*
+ * En estos niveles la velocidad vuelve
+ * automáticamente a ×1.
+ *
+ * 5  -> aparece tercer enemigo
+ * 11 -> aparece cuarto enemigo
+ * 18 -> aparece quinto enemigo
+ * 22 -> último reinicio programado
+ */
+const AUTOMATIC_SPEED_RESET_LEVELS =
+  Object.freeze([
+    1,
+    5,
+    11,
+    18,
+    22
+  ]);
+
+
+/* =========================================================
    ELEMENTOS HTML
    ========================================================= */
 
@@ -97,6 +140,7 @@ if (!canvas) {
     "No se ha encontrado el canvas #game."
   );
 }
+
 
 const context =
   canvas.getContext("2d");
@@ -134,10 +178,7 @@ let paused = false;
 
 
 /*
- * Acción que realizará el siguiente
- * toque válido sobre el tablero.
- *
- * Valores:
+ * Acción pendiente al tocar el tablero.
  *
  * null
  * "nextLevel"
@@ -149,6 +190,175 @@ let boardTouchAction = null;
 let boardTouchReady = false;
 let boardTouchInProgress = false;
 let boardTouchTimeout = null;
+
+
+/* =========================================================
+   VELOCIDAD DINÁMICA DE ENEMIGOS
+   ========================================================= */
+
+function isAutomaticSpeedResetLevel(
+  levelNumber
+) {
+
+  return (
+    AUTOMATIC_SPEED_RESET_LEVELS
+      .includes(
+        levelNumber
+      )
+  );
+}
+
+
+/*
+ * Calcula el multiplicador según la distancia
+ * desde el último nivel de reinicio.
+ *
+ * Ejemplo:
+ *
+ * reset = 22
+ *
+ * 22 -> ×1.00
+ * 23 -> ×1.06
+ * 24 -> ×1.12
+ * 25 -> ×1.18
+ */
+function getCurrentEnemySpeedMultiplier(
+  levelNumber =
+    gameState.currentLevel
+) {
+
+  const resetLevel =
+    getEnemySpeedResetLevel();
+
+
+  const levelsSinceReset =
+    Math.max(
+      0,
+      levelNumber -
+        resetLevel
+    );
+
+
+  const multiplier =
+    1 +
+    levelsSinceReset *
+      ENEMY_SPEED_INCREASE_PER_LEVEL;
+
+
+  return Math.min(
+    MAX_ENEMY_SPEED_MULTIPLIER,
+    multiplier
+  );
+}
+
+
+/*
+ * Devuelve una copia de las configuraciones
+ * de enemigos aplicando el multiplicador
+ * actual.
+ */
+function getScaledEnemyConfigurations(
+  enemies,
+  levelNumber
+) {
+
+  const safeEnemies =
+    Array.isArray(
+      enemies
+    )
+      ? enemies
+      : [];
+
+
+  const multiplier =
+    getCurrentEnemySpeedMultiplier(
+      levelNumber
+    );
+
+
+  return safeEnemies.map(
+    (enemy) => ({
+
+      ...enemy,
+
+      vx:
+        enemy.vx *
+        multiplier,
+
+      vy:
+        enemy.vy *
+        multiplier
+    })
+  );
+}
+
+
+/*
+ * Al perder una vida NO reiniciamos
+ * el tablero ni recolocamos los enemigos.
+ *
+ * Conservamos sus posiciones y direcciones,
+ * pero devolvemos su velocidad a ×1.
+ */
+function resetCurrentEnemySpeed() {
+
+  const multiplier =
+    getCurrentEnemySpeedMultiplier(
+      gameState.currentLevel
+    );
+
+
+  /*
+   * Marcamos el nivel actual como
+   * nuevo punto ×1.
+   */
+  resetEnemySpeedProgression(
+    gameState.currentLevel
+  );
+
+
+  /*
+   * Si ya estaban a ×1 no tenemos
+   * que modificar nada.
+   */
+  if (
+    multiplier <= 1
+  ) {
+    return;
+  }
+
+
+  if (
+    !Array.isArray(
+      gameState.enemies
+    )
+  ) {
+    return;
+  }
+
+
+  /*
+   * Dividimos por el multiplicador que
+   * tenían actualmente.
+   *
+   * Esto conserva:
+   *
+   * - posición;
+   * - dirección;
+   * - rebotes actuales.
+   */
+  for (
+    const enemy
+    of gameState.enemies
+  ) {
+
+    enemy.vx /=
+      multiplier;
+
+    enemy.vy /=
+      multiplier;
+  }
+}
 
 
 /* =========================================================
@@ -181,7 +391,7 @@ function refreshHud() {
 
 
 /* =========================================================
-   BOTÓN DE SONIDO
+   SONIDO
    ========================================================= */
 
 function refreshMuteButton() {
@@ -283,7 +493,7 @@ async function toggleFullscreen() {
 
 
 /* =========================================================
-   BOTÓN DE PAUSA
+   PAUSA
    ========================================================= */
 
 function refreshPauseButton() {
@@ -516,7 +726,7 @@ function prepareBoardTouchAction(
 
 
 /* =========================================================
-   TOCAR EL TABLERO
+   TOCAR TABLERO
    ========================================================= */
 
 async function handleBoardPointerDown(
@@ -535,11 +745,6 @@ async function handleBoardPointerDown(
   event.preventDefault();
 
 
-  /*
-   * Guardamos la acción antes de llamar
-   * a loadLevel(), porque loadLevel()
-   * limpia el estado del toque.
-   */
   const action =
     boardTouchAction;
 
@@ -571,28 +776,27 @@ async function handleBoardPointerDown(
 
 
   /* -------------------------
-     REPETIR NIVEL
+     REPETIR POR TIEMPO
      ------------------------- */
 
   if (
     action === "retryLevel"
   ) {
 
+    /*
+     * El nuevo intento comienza
+     * a velocidad ×1.
+     */
+    resetEnemySpeedProgression(
+      gameState.currentLevel
+    );
+
+
     await loadLevel(
       gameState.currentLevel,
       {
-        /*
-         * Conservamos las vidas que
-         * quedaban al agotarse el tiempo.
-         */
         preserveLives: true,
-
-        /*
-         * Conservamos también la mejora
-         * permanente del rodillo.
-         */
         preserveRollerUpgrade: true,
-
         waitForStart: false
       }
     );
@@ -610,21 +814,20 @@ async function handleBoardPointerDown(
     action === "restartGame"
   ) {
 
+    /*
+     * Partida completamente nueva:
+     * la progresión vuelve al nivel 1.
+     */
+    resetEnemySpeedProgression(
+      1
+    );
+
+
     await loadLevel(
       1,
       {
-        /*
-         * Al perder todas las vidas
-         * comienza una partida nueva.
-         */
         preserveLives: false,
         preserveRollerUpgrade: false,
-
-        /*
-         * No volvemos a mostrar el botón
-         * inicial. El toque ya ha indicado
-         * que queremos volver a jugar.
-         */
         waitForStart: false
       }
     );
@@ -789,15 +992,27 @@ async function loadLevel(
   }
 
 
-  /*
-   * Cancelamos cualquier acción
-   * pendiente del nivel anterior.
-   */
   resetBoardTouchAction();
 
 
   waitingToStart = false;
   paused = false;
+
+
+  /*
+   * Los niveles especiales comienzan
+   * siempre a ×1.
+   */
+  if (
+    isAutomaticSpeedResetLevel(
+      levelNumber
+    )
+  ) {
+
+    resetEnemySpeedProgression(
+      levelNumber
+    );
+  }
 
 
   if (
@@ -829,8 +1044,21 @@ async function loadLevel(
     resetRoller();
 
 
+  /*
+   * levels.js entrega velocidades base.
+   *
+   * Aquí aplicamos el multiplicador
+   * dinámico correspondiente.
+   */
+  const scaledEnemies =
+    getScaledEnemyConfigurations(
+      level.enemies,
+      levelNumber
+    );
+
+
   createEnemies(
-    level.enemies
+    scaledEnemies
   );
 
 
@@ -1065,6 +1293,23 @@ function damagePlayer() {
   resetRollerPaintWidth();
 
 
+  /*
+   * NUEVO:
+   *
+   * Una sola vida perdida reinicia
+   * inmediatamente la velocidad de
+   * todos los enemigos a ×1.
+   *
+   * No reiniciamos:
+   *
+   * - tablero;
+   * - porcentaje;
+   * - tiempo;
+   * - posiciones de enemigos.
+   */
+  resetCurrentEnemySpeed();
+
+
   respawnRoller();
 
 
@@ -1117,8 +1362,6 @@ function updatePrizeSystem() {
     result.effect;
 
 
-  /* VIDA */
-
   if (
     effect.extraLives > 0
   ) {
@@ -1128,8 +1371,6 @@ function updatePrizeSystem() {
     );
   }
 
-
-  /* TIEMPO */
 
   if (
     effect.extraTime > 0
@@ -1141,8 +1382,6 @@ function updatePrizeSystem() {
   }
 
 
-  /* INVULNERABILIDAD */
-
   if (
     effect.invulnerabilityTime > 0
   ) {
@@ -1152,8 +1391,6 @@ function updatePrizeSystem() {
     );
   }
 
-
-  /* CONGELACIÓN */
 
   if (
     effect.freezeEnemiesTime > 0
@@ -1165,8 +1402,6 @@ function updatePrizeSystem() {
   }
 
 
-  /* AMPLIACIÓN */
-
   if (
     effect.rollerUpgrade > 0
   ) {
@@ -1176,8 +1411,6 @@ function updatePrizeSystem() {
     );
   }
 
-
-  /* EXPLOSIÓN */
 
   if (
     effect.paintResult
@@ -1227,6 +1460,14 @@ function updateTimer(
   if (
     gameState.timeLeft <= 0
   ) {
+
+    /*
+     * El nivel repetido empezará a ×1.
+     */
+    resetEnemySpeedProgression(
+      gameState.currentLevel
+    );
+
 
     loseGame(
       "time"
@@ -1360,9 +1601,6 @@ function finishLevel() {
   }
 
 
-  /*
-   * ÚLTIMO NIVEL COMPLETADO
-   */
   resetBoardTouchAction();
 
 
@@ -1532,8 +1770,6 @@ async function initializeGame() {
   initializeInput();
 
 
-  /* PAUSA */
-
   if (
     pauseButton
   ) {
@@ -1544,8 +1780,6 @@ async function initializeGame() {
     );
   }
 
-
-  /* SONIDO */
 
   if (
     muteButton
@@ -1558,8 +1792,6 @@ async function initializeGame() {
   }
 
 
-  /* PANTALLA COMPLETA */
-
   if (
     fullscreenButton
   ) {
@@ -1571,9 +1803,6 @@ async function initializeGame() {
   }
 
 
-  /*
-   * TOQUE DEL TABLERO
-   */
   if (
     gameShell
   ) {
@@ -1597,8 +1826,14 @@ async function initializeGame() {
 
 
   /*
-   * PRIMER NIVEL
+   * Toda partida nueva empieza
+   * con velocidad ×1 desde nivel 1.
    */
+  resetEnemySpeedProgression(
+    1
+  );
+
+
   await loadLevel(
     1,
     {
