@@ -12,7 +12,7 @@ import {
 
 const LEVEL_COUNT = 100;
 
-const TARGET_PERCENT = 82;
+const TARGET_PERCENT = 80;
 const ROUND_TIME = 100;
 const STARTING_LIVES = 3;
 
@@ -26,8 +26,23 @@ const INVULNERABILITY_DURATION = 1.5;
    DIFICULTAD
    ========================================================= */
 
-const ENEMY_SPEED_INCREASE_PER_LEVEL = 0.06;
-const MAX_ENEMY_SPEED_MULTIPLIER = 3.5;
+/*
+ * Versión móvil:
+ *
+ * Antes:
+ * +6% por nivel
+ * máximo ×3.5
+ *
+ * Ahora:
+ * +3% por nivel
+ * máximo ×2.5
+ *
+ * Así la dificultad sigue creciendo,
+ * pero no convierte a todos los enemigos
+ * en misiles demasiado pronto.
+ */
+const ENEMY_SPEED_INCREASE_PER_LEVEL = 0.03;
+const MAX_ENEMY_SPEED_MULTIPLIER = 2.5;
 
 
 /* =========================================================
@@ -91,18 +106,26 @@ const REGULAR_PRIZE_TYPES = Object.freeze([
    ========================================================= */
 
 /*
- * Plantillas de los cinco enemigos máximos.
+ * Plantillas adaptadas al tablero móvil
+ * de aproximadamente 25 × 14 casillas.
  *
- * Niveles 1-3   -> 2
- * Niveles 4-7   -> 3
- * Niveles 8-12  -> 4
- * Nivel 13+     -> 5
+ * Distribución:
+ *
+ * Niveles 1-4    -> 2 enemigos
+ * Niveles 5-9    -> 3 enemigos
+ * Niveles 10-19  -> 4 enemigos
+ * Nivel 20+      -> 5 enemigos
+ *
+ * Las posiciones están repartidas para
+ * evitar que varios enemigos aparezcan
+ * pegados al mismo borde.
  */
 const ENEMY_TEMPLATES = Object.freeze([
+
   Object.freeze({
     type: "basic",
-    x: 7.5,
-    y: 4.5,
+    x: 5.5,
+    y: 3.5,
     vx: 4.2,
     vy: 3.2,
     radius: 0.38
@@ -110,8 +133,8 @@ const ENEMY_TEMPLATES = Object.freeze([
 
   Object.freeze({
     type: "basic",
-    x: 29.5,
-    y: 15.5,
+    x: 19.5,
+    y: 10.5,
     vx: -3.7,
     vy: 3.8,
     radius: 0.38
@@ -119,8 +142,8 @@ const ENEMY_TEMPLATES = Object.freeze([
 
   Object.freeze({
     type: "basic",
-    x: 18.5,
-    y: 7.5,
+    x: 12.5,
+    y: 5.5,
     vx: 3.4,
     vy: -4.0,
     radius: 0.38
@@ -128,8 +151,8 @@ const ENEMY_TEMPLATES = Object.freeze([
 
   Object.freeze({
     type: "basic",
-    x: 11.5,
-    y: 15.5,
+    x: 7.5,
+    y: 10.5,
     vx: -4.1,
     vy: -3.3,
     radius: 0.38
@@ -137,8 +160,8 @@ const ENEMY_TEMPLATES = Object.freeze([
 
   Object.freeze({
     type: "basic",
-    x: 27.5,
-    y: 9.5,
+    x: 18.5,
+    y: 6.5,
     vx: 4.0,
     vy: -3.7,
     radius: 0.38
@@ -155,6 +178,7 @@ function clamp(
   minimum,
   maximum
 ) {
+
   return Math.min(
     maximum,
     Math.max(
@@ -173,17 +197,31 @@ function getEnemyCount(
   levelId
 ) {
 
-  if (levelId <= 3) {
+  /*
+   * La cantidad crece más despacio
+   * que en la versión anterior.
+   */
+
+  if (
+    levelId <= 4
+  ) {
     return 2;
   }
 
-  if (levelId <= 7) {
+
+  if (
+    levelId <= 9
+  ) {
     return 3;
   }
 
-  if (levelId <= 12) {
+
+  if (
+    levelId <= 19
+  ) {
     return 4;
   }
+
 
   return 5;
 }
