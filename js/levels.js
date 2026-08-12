@@ -27,22 +27,29 @@ const INVULNERABILITY_DURATION = 1.5;
    ========================================================= */
 
 /*
- * Versión móvil:
+ * La velocidad dinámica ya NO se calcula aquí.
  *
- * Antes:
- * +6% por nivel
- * máximo ×3.5
+ * levels.js entrega siempre las velocidades base ×1.
  *
- * Ahora:
- * +3% por nivel
- * máximo ×2.5
+ * game.js aplicará después el multiplicador dinámico:
  *
- * Así la dificultad sigue creciendo,
- * pero no convierte a todos los enemigos
- * en misiles demasiado pronto.
+ * ×1.00
+ * ×1.06
+ * ×1.12
+ * ×1.18
+ * ...
+ *
+ * Reinicios automáticos previstos:
+ *
+ * nivel 1
+ * nivel 5
+ * nivel 11
+ * nivel 18
+ * nivel 22
+ *
+ * Y posteriormente también al perder una vida
+ * o repetir un nivel por tiempo agotado.
  */
-const ENEMY_SPEED_INCREASE_PER_LEVEL = 0.03;
-const MAX_ENEMY_SPEED_MULTIPLIER = 2.5;
 
 
 /* =========================================================
@@ -63,36 +70,13 @@ const PRIZE_TYPES = Object.freeze({
    REGLAS DE PREMIOS
    ========================================================= */
 
-/*
- * Corazón:
- *
- * - nunca antes del nivel 5
- * - mínimo 6 niveles entre corazones
- *
- * Aparecerá:
- * 5, 11, 17, 23, 29...
- */
 const FIRST_EXTRA_LIFE_LEVEL = 5;
 const EXTRA_LIFE_LEVEL_GAP = 6;
 
-
-/*
- * Ampliación:
- *
- * - mínimo 6 niveles entre ampliaciones
- *
- * Aparecerá:
- * 3, 9, 15, 21, 27...
- */
 const FIRST_ROLLER_UPGRADE_LEVEL = 3;
 const ROLLER_UPGRADE_LEVEL_GAP = 6;
 
 
-/*
- * Premios normales.
- *
- * Se van alternando automáticamente.
- */
 const REGULAR_PRIZE_TYPES = Object.freeze([
   PRIZE_TYPES.EXTRA_TIME,
   PRIZE_TYPES.INVULNERABILITY,
@@ -106,19 +90,14 @@ const REGULAR_PRIZE_TYPES = Object.freeze([
    ========================================================= */
 
 /*
- * Plantillas adaptadas al tablero móvil
- * de aproximadamente 25 × 14 casillas.
+ * TABLA DEFINITIVA DE CANTIDAD:
  *
- * Distribución:
+ * niveles 1 - 4   -> 2 enemigos
+ * niveles 5 - 10  -> 3 enemigos
+ * niveles 11 - 17 -> 4 enemigos
+ * nivel 18+       -> 5 enemigos
  *
- * Niveles 1-4    -> 2 enemigos
- * Niveles 5-9    -> 3 enemigos
- * Niveles 10-19  -> 4 enemigos
- * Nivel 20+      -> 5 enemigos
- *
- * Las posiciones están repartidas para
- * evitar que varios enemigos aparezcan
- * pegados al mismo borde.
+ * Todos nacen aquí con velocidad base ×1.
  */
 const ENEMY_TEMPLATES = Object.freeze([
 
@@ -197,56 +176,28 @@ function getEnemyCount(
   levelId
 ) {
 
-  /*
-   * La cantidad crece más despacio
-   * que en la versión anterior.
-   */
-
   if (
-    levelId <= 4
+    levelId < 5
   ) {
     return 2;
   }
 
 
   if (
-    levelId <= 9
+    levelId < 11
   ) {
     return 3;
   }
 
 
   if (
-    levelId <= 19
+    levelId < 18
   ) {
     return 4;
   }
 
 
   return 5;
-}
-
-
-/* =========================================================
-   VELOCIDAD DE ENEMIGOS
-   ========================================================= */
-
-function getEnemySpeedMultiplier(
-  levelId
-) {
-
-  const multiplier =
-    1 +
-    (
-      levelId - 1
-    ) *
-    ENEMY_SPEED_INCREASE_PER_LEVEL;
-
-
-  return Math.min(
-    MAX_ENEMY_SPEED_MULTIPLIER,
-    multiplier
-  );
 }
 
 
@@ -287,12 +238,15 @@ function createLevelEnemies(
     );
 
 
-  const speedMultiplier =
-    getEnemySpeedMultiplier(
-      levelId
-    );
-
-
+  /*
+   * IMPORTANTE:
+   *
+   * Aquí NO multiplicamos la velocidad.
+   *
+   * Cada enemigo se crea siempre a ×1.
+   * game.js aplicará posteriormente
+   * el multiplicador dinámico.
+   */
   return ENEMY_TEMPLATES
     .slice(
       0,
@@ -323,12 +277,10 @@ function createLevelEnemies(
             ),
 
           vx:
-            template.vx *
-            speedMultiplier,
+            template.vx,
 
           vy:
-            template.vy *
-            speedMultiplier,
+            template.vy,
 
           radius:
             template.radius
@@ -342,22 +294,11 @@ function createLevelEnemies(
    POSICIONES DE PREMIOS
    ========================================================= */
 
-/**
- * Genera posiciones variables pero deterministas.
- *
- * Esto significa que un premio del nivel 20
- * siempre aparecerá en la misma posición,
- * incluso aunque reinicies el nivel.
- */
 function getPrizePosition(
   levelId,
   slot = 0
 ) {
 
-  /*
-   * Dejamos cierto margen respecto
-   * a los bordes.
-   */
   const horizontalMargin = 3;
   const verticalMargin = 3;
 
@@ -487,18 +428,6 @@ function getRegularPrizeType(
    CREACIÓN DE PREMIOS
    ========================================================= */
 
-/**
- * Distribución:
- *
- * Nivel 1:
- * sin premio.
- *
- * Desde nivel 2:
- * normalmente 1 premio.
- *
- * Cuando toca corazón o ampliación,
- * ese nivel puede tener 2 premios.
- */
 function createLevelPrizes(
   levelId
 ) {
@@ -507,8 +436,7 @@ function createLevelPrizes(
 
 
   /*
-   * Nivel 1 limpio para aprender
-   * la mecánica básica.
+   * Nivel 1 sin premio.
    */
   if (
     levelId === 1
@@ -532,6 +460,7 @@ function createLevelPrizes(
 
 
   prizes.push({
+
     type:
       getRegularPrizeType(
         levelId
@@ -543,8 +472,7 @@ function createLevelPrizes(
     y:
       regularPosition.y,
 
-    value:
-      1
+    value: 1
   });
 
 
@@ -569,6 +497,7 @@ function createLevelPrizes(
 
 
     prizes.push({
+
       type:
         PRIZE_TYPES.EXTRA_LIFE,
 
@@ -578,8 +507,7 @@ function createLevelPrizes(
       y:
         position.y,
 
-      value:
-        1
+      value: 1
     });
 
 
@@ -605,6 +533,7 @@ function createLevelPrizes(
 
 
     prizes.push({
+
       type:
         PRIZE_TYPES.ROLLER_UPGRADE,
 
@@ -614,8 +543,7 @@ function createLevelPrizes(
       y:
         position.y,
 
-      value:
-        1
+      value: 1
     });
   }
 
@@ -678,10 +606,12 @@ function createLevel(
        DIFICULTAD
        ------------------------- */
 
-    enemySpeedMultiplier:
-      getEnemySpeedMultiplier(
-        levelId
-      ),
+    /*
+     * El nivel entrega ×1.
+     * El multiplicador real se calculará
+     * dinámicamente en game.js.
+     */
+    enemySpeedMultiplier: 1,
 
     enemyCount:
       getEnemyCount(
