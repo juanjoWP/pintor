@@ -21,9 +21,11 @@ import {
   resetRollerPaintWidth,
   resetStateForLevel,
   setEnemyFreeze,
+  setEnemySlow,
   setGameStatus,
   setInvulnerability,
   updateEnemyFreeze,
+  updateEnemySlow,
   updateInvulnerability,
   upgradeRollerPaintWidth
 } from "./state.js";
@@ -1294,8 +1296,6 @@ function damagePlayer() {
 
 
   /*
-   * NUEVO:
-   *
    * Una sola vida perdida reinicia
    * inmediatamente la velocidad de
    * todos los enemigos a ×1.
@@ -1398,6 +1398,23 @@ function updatePrizeSystem() {
 
     setEnemyFreeze(
       effect.freezeEnemiesTime
+    );
+  }
+
+
+  /*
+   * PREMIO CARACOL.
+   *
+   * Activa la ralentización temporal.
+   * enemies.js aplicará después el ×0,5
+   * sin modificar vx ni vy.
+   */
+  if (
+    effect.slowEnemiesTime > 0
+  ) {
+
+    setEnemySlow(
+      effect.slowEnemiesTime
     );
   }
 
@@ -1505,6 +1522,18 @@ function update(
 
 
   updateEnemyFreeze(
+    deltaTime
+  );
+
+
+  /*
+   * Descontamos el tiempo del caracol.
+   *
+   * Igual que los demás efectos temporales,
+   * no avanza mientras el juego está
+   * pausado o detenido.
+   */
+  updateEnemySlow(
     deltaTime
   );
 
