@@ -508,7 +508,7 @@ function prepareLevelAdvanceTouch() {
         ) {
 
           messageElement.textContent =
-            `¡Nivel completado! Has pintado el ${gameState.targetPercent}%. Toca el tablero para continuar.`;
+            `¡Nivel completado!  Toca para continuar.`;
         }
 
       },
