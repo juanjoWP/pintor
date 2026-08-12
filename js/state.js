@@ -9,7 +9,9 @@ import {
   PLAYER_CONFIG
 } from "./config.js";
 
+
 const DEFAULT_INVULNERABILITY_DURATION = 1.5;
+
 
 /*
  * El rodillo empieza pintando una casilla.
@@ -19,6 +21,10 @@ const DEFAULT_INVULNERABILITY_DURATION = 1.5;
 const DEFAULT_ROLLER_PAINT_WIDTH = 1;
 const MAX_ROLLER_PAINT_WIDTH = 4;
 
+
+/* =========================================================
+   ESTADOS DEL JUEGO
+   ========================================================= */
 
 export const GAME_STATUS = Object.freeze({
   IDLE: "idle",
@@ -36,13 +42,27 @@ export const ACTION_MODES = Object.freeze({
 });
 
 
-function createInitialPlayerState() {
-  return {
-    x: PLAYER_CONFIG.startX,
-    y: PLAYER_CONFIG.startY,
+/* =========================================================
+   JUGADOR INICIAL
+   ========================================================= */
 
-    startX: PLAYER_CONFIG.startX,
-    startY: PLAYER_CONFIG.startY,
+function createInitialPlayerState() {
+
+  return {
+
+    x:
+      PLAYER_CONFIG.startX,
+
+    y:
+      PLAYER_CONFIG.startY,
+
+
+    startX:
+      PLAYER_CONFIG.startX,
+
+    startY:
+      PLAYER_CONFIG.startY,
+
 
     direction: {
       ...PLAYER_CONFIG.initialDirection
@@ -58,34 +78,81 @@ function createInitialPlayerState() {
 export const gameState = {
 
   currentLevel: 1,
-  levelName: "Nivel 1",
+
+  levelName:
+    "Nivel 1",
+
+
+  /* -------------------------
+     TABLERO
+     ------------------------- */
 
   grid: [],
+
   paintedCells: 0,
+
   paintedPercent: 0,
+
   targetPercent:
     DEFAULT_TARGET_PERCENT,
+
+
+  /* -------------------------
+     JUGADOR
+     ------------------------- */
 
   player:
     createInitialPlayerState(),
 
+
+  /* -------------------------
+     ENTIDADES
+     ------------------------- */
+
   enemies: [],
+
   prizes: [],
+
+
+  /* -------------------------
+     VIDAS
+     ------------------------- */
 
   lives:
     DEFAULT_STARTING_LIVES,
 
+
+  /* -------------------------
+     TIEMPO
+     ------------------------- */
+
   timeLeft:
     INITIAL_ROUND_TIME,
+
+
+  /* -------------------------
+     MOVIMIENTO
+     ------------------------- */
 
   playerMoveInterval:
     DEFAULT_PLAYER_MOVE_INTERVAL,
 
+
+  /* -------------------------
+     DAÑO
+     ------------------------- */
+
   enemyCollisionDamage:
     DEFAULT_ENEMY_COLLISION_DAMAGE,
 
+
+  /* -------------------------
+     INVULNERABILIDAD
+     ------------------------- */
+
   invulnerabilityDuration:
     DEFAULT_INVULNERABILITY_DURATION,
+
 
   /*
    * Tiempo restante de
@@ -93,11 +160,17 @@ export const gameState = {
    */
   invulnerabilityTime: 0,
 
+
   /*
    * Tiempo restante de
    * congelación de enemigos.
    */
   enemyFreezeTime: 0,
+
+
+  /* -------------------------
+     RODILLO
+     ------------------------- */
 
   /*
    * Anchura actual de pintado.
@@ -110,6 +183,31 @@ export const gameState = {
   rollerPaintWidth:
     DEFAULT_ROLLER_PAINT_WIDTH,
 
+
+  /* -------------------------
+     VELOCIDAD DE ENEMIGOS
+     ------------------------- */
+
+  /*
+   * Nivel desde el que empieza
+   * a calcularse nuevamente el
+   * aumento de velocidad.
+   *
+   * Ejemplo:
+   *
+   * enemySpeedResetLevel = 28
+   *
+   * Nivel 28 -> ×1.00
+   * Nivel 29 -> ×1.06
+   * Nivel 30 -> ×1.12
+   */
+  enemySpeedResetLevel: 1,
+
+
+  /* -------------------------
+     ESTADO DE PARTIDA
+     ------------------------- */
+
   running: false,
 
   gameStatus:
@@ -118,8 +216,15 @@ export const gameState = {
   actionMode:
     ACTION_MODES.RESTART,
 
+
+  /* -------------------------
+     BUCLE
+     ------------------------- */
+
   lastFrameTime: 0,
+
   moveAccumulator: 0,
+
   timerAccumulator: 0
 };
 
@@ -150,6 +255,7 @@ export function resetStateForLevel(
     !level ||
     typeof level !== "object"
   ) {
+
     throw new TypeError(
       "resetStateForLevel necesita una configuración de nivel válida."
     );
@@ -163,21 +269,32 @@ export function resetStateForLevel(
   const previousLives =
     gameState.lives;
 
+
   const previousRollerPaintWidth =
     gameState.rollerPaintWidth;
 
 
+  /* -------------------------
+     NIVEL
+     ------------------------- */
+
   gameState.currentLevel =
     level.id ?? 1;
+
 
   gameState.levelName =
     level.name ??
     `Nivel ${gameState.currentLevel}`;
 
 
+  /* -------------------------
+     TABLERO
+     ------------------------- */
+
   gameState.grid = [];
 
   gameState.paintedCells = 0;
+
   gameState.paintedPercent = 0;
 
 
@@ -186,11 +303,20 @@ export function resetStateForLevel(
     DEFAULT_TARGET_PERCENT;
 
 
+  /* -------------------------
+     JUGADOR
+     ------------------------- */
+
   gameState.player =
     createInitialPlayerState();
 
 
+  /* -------------------------
+     ENTIDADES
+     ------------------------- */
+
   gameState.enemies = [];
+
   gameState.prizes = [];
 
 
@@ -198,7 +324,9 @@ export function resetStateForLevel(
      VIDAS
      ------------------------- */
 
-  if (preserveLives) {
+  if (
+    preserveLives
+  ) {
 
     gameState.lives =
       Math.max(
@@ -218,7 +346,9 @@ export function resetStateForLevel(
      AMPLIACIÓN DEL RODILLO
      ------------------------- */
 
-  if (preserveRollerUpgrade) {
+  if (
+    preserveRollerUpgrade
+  ) {
 
     gameState.rollerPaintWidth =
       Math.min(
@@ -236,20 +366,36 @@ export function resetStateForLevel(
   }
 
 
+  /* -------------------------
+     TIEMPO
+     ------------------------- */
+
   gameState.timeLeft =
     level.roundTime ??
     INITIAL_ROUND_TIME;
 
+
+  /* -------------------------
+     MOVIMIENTO
+     ------------------------- */
 
   gameState.playerMoveInterval =
     level.playerMoveInterval ??
     DEFAULT_PLAYER_MOVE_INTERVAL;
 
 
+  /* -------------------------
+     DAÑO
+     ------------------------- */
+
   gameState.enemyCollisionDamage =
     level.enemyCollisionDamage ??
     DEFAULT_ENEMY_COLLISION_DAMAGE;
 
+
+  /* -------------------------
+     INVULNERABILIDAD
+     ------------------------- */
 
   gameState.invulnerabilityDuration =
     level.invulnerabilityDuration ??
@@ -261,23 +407,109 @@ export function resetStateForLevel(
    * de un nivel al siguiente.
    */
   gameState.invulnerabilityTime = 0;
+
   gameState.enemyFreezeTime = 0;
 
 
+  /* -------------------------
+     ESTADO
+     ------------------------- */
+
   gameState.running = true;
+
 
   gameState.gameStatus =
     GAME_STATUS.PLAYING;
+
 
   gameState.actionMode =
     ACTION_MODES.RESTART;
 
 
+  /* -------------------------
+     BUCLE
+     ------------------------- */
+
   gameState.lastFrameTime =
     performance.now();
 
+
   gameState.moveAccumulator = 0;
+
   gameState.timerAccumulator = 0;
+}
+
+
+/* =========================================================
+   PROGRESIÓN DE VELOCIDAD DE ENEMIGOS
+   ========================================================= */
+
+/**
+ * Reinicia la progresión de velocidad
+ * a partir de un nivel concreto.
+ *
+ * Si no indicamos nivel, utiliza
+ * automáticamente el nivel actual.
+ *
+ * Ejemplo:
+ *
+ * Nivel actual: 28
+ *
+ * resetEnemySpeedProgression()
+ *
+ * Resultado:
+ *
+ * Nivel 28 -> ×1.00
+ * Nivel 29 -> ×1.06
+ * Nivel 30 -> ×1.12
+ */
+export function resetEnemySpeedProgression(
+  levelNumber =
+    gameState.currentLevel
+) {
+
+  const numericLevel =
+    Math.floor(
+      Number(
+        levelNumber
+      )
+    );
+
+
+  const safeLevel =
+    Number.isFinite(
+      numericLevel
+    )
+      ? Math.max(
+          1,
+          numericLevel
+        )
+      : Math.max(
+          1,
+          gameState.currentLevel
+        );
+
+
+  gameState.enemySpeedResetLevel =
+    safeLevel;
+
+
+  return (
+    gameState.enemySpeedResetLevel
+  );
+}
+
+
+/**
+ * Devuelve el nivel desde el que
+ * se está contando actualmente
+ * el incremento de velocidad.
+ */
+export function getEnemySpeedResetLevel() {
+
+  return (
+    gameState.enemySpeedResetLevel
+  );
 }
 
 
@@ -287,15 +519,18 @@ export function resetStateForLevel(
 
 export function setGameStatus(
   status,
-  actionMode = gameState.actionMode
+  actionMode =
+    gameState.actionMode
 ) {
 
   gameState.gameStatus =
     status;
 
+
   gameState.running =
     status ===
     GAME_STATUS.PLAYING;
+
 
   gameState.actionMode =
     actionMode;
@@ -318,10 +553,13 @@ export function isGameRunning() {
 
 export function resetPlayerPosition() {
 
-  if (!gameState.player) {
+  if (
+    !gameState.player
+  ) {
 
     gameState.player =
       createInitialPlayerState();
+
 
     return;
   }
@@ -329,6 +567,7 @@ export function resetPlayerPosition() {
 
   gameState.player.x =
     gameState.player.startX;
+
 
   gameState.player.y =
     gameState.player.startY;
@@ -349,10 +588,14 @@ export function addLives(
 ) {
 
   const safeAmount =
-    Number.isFinite(amount)
+    Number.isFinite(
+      amount
+    )
       ? Math.max(
           0,
-          Math.floor(amount)
+          Math.floor(
+            amount
+          )
         )
       : 0;
 
@@ -370,10 +613,14 @@ export function removeLives(
 ) {
 
   const safeAmount =
-    Number.isFinite(amount)
+    Number.isFinite(
+      amount
+    )
       ? Math.max(
           0,
-          Math.floor(amount)
+          Math.floor(
+            amount
+          )
         )
       : 0;
 
@@ -399,7 +646,9 @@ export function addTime(
 ) {
 
   const safeSeconds =
-    Number.isFinite(seconds)
+    Number.isFinite(
+      seconds
+    )
       ? Math.max(
           0,
           seconds
@@ -420,7 +669,9 @@ export function removeTime(
 ) {
 
   const safeSeconds =
-    Number.isFinite(seconds)
+    Number.isFinite(
+      seconds
+    )
       ? Math.max(
           0,
           seconds
@@ -449,7 +700,9 @@ export function setInvulnerability(
 ) {
 
   const safeSeconds =
-    Number.isFinite(seconds)
+    Number.isFinite(
+      seconds
+    )
       ? Math.max(
           0,
           seconds
@@ -464,7 +717,9 @@ export function setInvulnerability(
     );
 
 
-  return gameState.invulnerabilityTime;
+  return (
+    gameState.invulnerabilityTime
+  );
 }
 
 
@@ -473,7 +728,9 @@ export function updateInvulnerability(
 ) {
 
   const safeDelta =
-    Number.isFinite(deltaTime)
+    Number.isFinite(
+      deltaTime
+    )
       ? Math.max(
           0,
           deltaTime
@@ -489,7 +746,9 @@ export function updateInvulnerability(
     );
 
 
-  return gameState.invulnerabilityTime;
+  return (
+    gameState.invulnerabilityTime
+  );
 }
 
 
@@ -518,7 +777,9 @@ export function setEnemyFreeze(
 ) {
 
   const safeSeconds =
-    Number.isFinite(seconds)
+    Number.isFinite(
+      seconds
+    )
       ? Math.max(
           0,
           seconds
@@ -533,7 +794,9 @@ export function setEnemyFreeze(
     );
 
 
-  return gameState.enemyFreezeTime;
+  return (
+    gameState.enemyFreezeTime
+  );
 }
 
 
@@ -545,7 +808,9 @@ export function updateEnemyFreeze(
 ) {
 
   const safeDelta =
-    Number.isFinite(deltaTime)
+    Number.isFinite(
+      deltaTime
+    )
       ? Math.max(
           0,
           deltaTime
@@ -561,7 +826,9 @@ export function updateEnemyFreeze(
     );
 
 
-  return gameState.enemyFreezeTime;
+  return (
+    gameState.enemyFreezeTime
+  );
 }
 
 
@@ -593,10 +860,14 @@ export function upgradeRollerPaintWidth(
 ) {
 
   const safeAmount =
-    Number.isFinite(amount)
+    Number.isFinite(
+      amount
+    )
       ? Math.max(
           0,
-          Math.floor(amount)
+          Math.floor(
+            amount
+          )
         )
       : 0;
 
@@ -609,7 +880,9 @@ export function upgradeRollerPaintWidth(
     );
 
 
-  return gameState.rollerPaintWidth;
+  return (
+    gameState.rollerPaintWidth
+  );
 }
 
 
@@ -625,7 +898,9 @@ export function resetRollerPaintWidth() {
     DEFAULT_ROLLER_PAINT_WIDTH;
 
 
-  return gameState.rollerPaintWidth;
+  return (
+    gameState.rollerPaintWidth
+  );
 }
 
 
@@ -634,7 +909,9 @@ export function resetRollerPaintWidth() {
  */
 export function getRollerPaintWidth() {
 
-  return gameState.rollerPaintWidth;
+  return (
+    gameState.rollerPaintWidth
+  );
 }
 
 
