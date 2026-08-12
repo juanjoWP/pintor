@@ -61,6 +61,7 @@ const PRIZE_TYPES = Object.freeze({
   EXTRA_TIME: "extraTime",
   INVULNERABILITY: "invulnerability",
   FREEZE_ENEMIES: "freezeEnemies",
+  SLOW_ENEMIES: "slowEnemies",
   PAINT_EXPLOSION: "paintExplosion",
   ROLLER_UPGRADE: "rollerUpgrade"
 });
@@ -77,10 +78,22 @@ const FIRST_ROLLER_UPGRADE_LEVEL = 3;
 const ROLLER_UPGRADE_LEVEL_GAP = 6;
 
 
+/*
+ * Rotación normal de premios:
+ *
+ * Nivel 2  -> tiempo
+ * Nivel 3  -> invulnerabilidad
+ * Nivel 4  -> congelación
+ * Nivel 5  -> caracol
+ * Nivel 6  -> explosión
+ * Nivel 7  -> tiempo
+ * ...
+ */
 const REGULAR_PRIZE_TYPES = Object.freeze([
   PRIZE_TYPES.EXTRA_TIME,
   PRIZE_TYPES.INVULNERABILITY,
   PRIZE_TYPES.FREEZE_ENEMIES,
+  PRIZE_TYPES.SLOW_ENEMIES,
   PRIZE_TYPES.PAINT_EXPLOSION
 ]);
 
