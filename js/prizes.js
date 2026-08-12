@@ -32,6 +32,15 @@ const PRIZE_TYPES = Object.freeze({
   FREEZE_ENEMIES:
     "freezeEnemies",
 
+  /*
+   * NUEVO:
+   *
+   * Ralentiza temporalmente
+   * a todos los enemigos.
+   */
+  SLOW_ENEMIES:
+    "slowEnemies",
+
   PAINT_EXPLOSION:
     "paintExplosion",
 
@@ -76,7 +85,6 @@ const VALID_PRIZE_TYPES =
 /*
  * Tamaño visual de los iconos.
  *
- * Una casilla mide 26 px.
  * Los premios se dibujan aproximadamente
  * a 1,5 casillas de tamaño.
  */
@@ -582,6 +590,12 @@ function createPrizeEffect(
 
     freezeEnemiesTime: 0,
 
+    /*
+     * NUEVO:
+     * duración de la ralentización.
+     */
+    slowEnemiesTime: 0,
+
     rollerUpgrade: 0,
 
     paintResult: null
@@ -629,6 +643,20 @@ function createPrizeEffect(
         ...baseEffect,
 
         freezeEnemiesTime: 10
+      };
+
+
+    /* -------------------------
+       CARACOL
+       ------------------------- */
+
+    case PRIZE_TYPES.SLOW_ENEMIES:
+
+      return {
+
+        ...baseEffect,
+
+        slowEnemiesTime: 10
       };
 
 
@@ -913,9 +941,6 @@ function drawClock(
   context.save();
 
 
-  /*
-   * Botón superior.
-   */
   context.fillStyle =
     "#ffd43b";
 
@@ -940,9 +965,6 @@ function drawClock(
   );
 
 
-  /*
-   * Cuerpo.
-   */
   context.beginPath();
 
   context.arc(
@@ -962,9 +984,6 @@ function drawClock(
   context.stroke();
 
 
-  /*
-   * Cara.
-   */
   context.beginPath();
 
   context.arc(
@@ -981,9 +1000,6 @@ function drawClock(
   context.fill();
 
 
-  /*
-   * Agujas.
-   */
   context.beginPath();
 
   context.moveTo(
@@ -1084,9 +1100,6 @@ function drawShield(
   context.stroke();
 
 
-  /*
-   * Brillo interior.
-   */
   context.beginPath();
 
   context.moveTo(
@@ -1171,9 +1184,6 @@ function drawSnowflake(
   }
 
 
-  /*
-   * Centro blanco.
-   */
   context.beginPath();
 
   context.arc(
@@ -1188,6 +1198,247 @@ function drawSnowflake(
     "#ffffff";
 
   context.fill();
+
+
+  context.restore();
+}
+
+
+/* =========================================================
+   CARACOL - RALENTIZACIÓN
+   ========================================================= */
+
+function drawSnail(
+  context,
+  x,
+  y,
+  size
+) {
+
+  const scale =
+    size / 60;
+
+
+  context.save();
+
+
+  context.translate(
+    x,
+    y
+  );
+
+
+  context.scale(
+    scale,
+    scale
+  );
+
+
+  /*
+   * CUERPO.
+   */
+  context.beginPath();
+
+  context.ellipse(
+    5,
+    12,
+    25,
+    9,
+    0,
+    0,
+    Math.PI * 2
+  );
+
+  context.fillStyle =
+    "#89d65c";
+
+  context.strokeStyle =
+    "#ffffff";
+
+  context.lineWidth = 3;
+
+  context.fill();
+
+  context.stroke();
+
+
+  /*
+   * CABEZA.
+   */
+  context.beginPath();
+
+  context.arc(
+    24,
+    5,
+    10,
+    0,
+    Math.PI * 2
+  );
+
+  context.fillStyle =
+    "#9ee66c";
+
+  context.fill();
+
+  context.stroke();
+
+
+  /*
+   * CONCHA.
+   */
+  context.beginPath();
+
+  context.arc(
+    -6,
+    0,
+    18,
+    0,
+    Math.PI * 2
+  );
+
+  context.fillStyle =
+    "#d68b3d";
+
+  context.strokeStyle =
+    "#ffffff";
+
+  context.lineWidth = 3;
+
+  context.fill();
+
+  context.stroke();
+
+
+  /*
+   * ESPIRAL DE LA CONCHA.
+   */
+  context.beginPath();
+
+  context.arc(
+    -6,
+    0,
+    10,
+    0,
+    Math.PI * 1.7
+  );
+
+  context.strokeStyle =
+    "#774315";
+
+  context.lineWidth = 3;
+
+  context.stroke();
+
+
+  /*
+   * ANTENAS.
+   */
+  context.beginPath();
+
+  context.moveTo(
+    20,
+    -2
+  );
+
+  context.lineTo(
+    17,
+    -18
+  );
+
+  context.moveTo(
+    27,
+    -2
+  );
+
+  context.lineTo(
+    32,
+    -18
+  );
+
+  context.strokeStyle =
+    "#9ee66c";
+
+  context.lineWidth = 3;
+
+  context.stroke();
+
+
+  /*
+   * BOLITAS DE LAS ANTENAS.
+   */
+  context.beginPath();
+
+  context.arc(
+    17,
+    -18,
+    3,
+    0,
+    Math.PI * 2
+  );
+
+  context.arc(
+    32,
+    -18,
+    3,
+    0,
+    Math.PI * 2
+  );
+
+  context.fillStyle =
+    "#ffffff";
+
+  context.fill();
+
+
+  /*
+   * OJOS.
+   */
+  context.beginPath();
+
+  context.arc(
+    22,
+    3,
+    1.8,
+    0,
+    Math.PI * 2
+  );
+
+  context.arc(
+    28,
+    3,
+    1.8,
+    0,
+    Math.PI * 2
+  );
+
+  context.fillStyle =
+    "#111111";
+
+  context.fill();
+
+
+  /*
+   * SONRISA.
+   *
+   * El tío todavía no sabe que
+   * tendrá que ralentizar cinco bolas.
+   */
+  context.beginPath();
+
+  context.arc(
+    25,
+    6,
+    4,
+    0.1,
+    Math.PI - 0.1
+  );
+
+  context.strokeStyle =
+    "#244510";
+
+  context.lineWidth = 1.8;
+
+  context.stroke();
 
 
   context.restore();
@@ -1288,9 +1539,6 @@ function drawPaintExplosion(
   context.stroke();
 
 
-  /*
-   * Centro amarillo.
-   */
   context.beginPath();
 
   context.arc(
@@ -1332,9 +1580,6 @@ function drawRollerUpgrade(
   context.save();
 
 
-  /*
-   * Cilindro.
-   */
   context.fillStyle =
     "#ffd538";
 
@@ -1360,9 +1605,6 @@ function drawRollerUpgrade(
   );
 
 
-  /*
-   * Soporte.
-   */
   context.beginPath();
 
   context.moveTo(
@@ -1389,9 +1631,6 @@ function drawRollerUpgrade(
   context.stroke();
 
 
-  /*
-   * Mango.
-   */
   context.beginPath();
 
   context.moveTo(
@@ -1413,9 +1652,6 @@ function drawRollerUpgrade(
   context.stroke();
 
 
-  /*
-   * Símbolo + pequeño.
-   */
   context.font =
     `bold ${Math.round(
       size * 0.42
@@ -1526,6 +1762,22 @@ function renderPrize(
     case PRIZE_TYPES.FREEZE_ENEMIES:
 
       drawSnowflake(
+        context,
+        x,
+        y,
+        PRIZE_VISUAL_SIZE
+      );
+
+      break;
+
+
+    /* -------------------------
+       CARACOL
+       ------------------------- */
+
+    case PRIZE_TYPES.SLOW_ENEMIES:
+
+      drawSnail(
         context,
         x,
         y,
