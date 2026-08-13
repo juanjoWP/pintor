@@ -1355,6 +1355,10 @@ function updatePrizeSystem() {
   }
 
 
+  /*
+   * Reproduce el sonido correspondiente
+   * al tipo de premio recogido.
+   */
   playPrizeSound(
     result.prize?.type
   );
@@ -1363,6 +1367,10 @@ function updatePrizeSystem() {
   const effect =
     result.effect;
 
+
+  /* -------------------------
+     VIDA EXTRA
+     ------------------------- */
 
   if (
     effect.extraLives > 0
@@ -1374,6 +1382,10 @@ function updatePrizeSystem() {
   }
 
 
+  /* -------------------------
+     TIEMPO EXTRA
+     ------------------------- */
+
   if (
     effect.extraTime > 0
   ) {
@@ -1383,6 +1395,10 @@ function updatePrizeSystem() {
     );
   }
 
+
+  /* -------------------------
+     INVULNERABILIDAD
+     ------------------------- */
 
   if (
     effect.invulnerabilityTime > 0
@@ -1394,6 +1410,10 @@ function updatePrizeSystem() {
   }
 
 
+  /* -------------------------
+     CONGELAR ENEMIGOS
+     ------------------------- */
+
   if (
     effect.freezeEnemiesTime > 0
   ) {
@@ -1404,13 +1424,10 @@ function updatePrizeSystem() {
   }
 
 
-  /*
-   * PREMIO CARACOL.
-   *
-   * Activa la ralentización temporal.
-   * enemies.js aplicará después el ×0,5
-   * sin modificar vx ni vy.
-   */
+  /* -------------------------
+     CARACOL
+     ------------------------- */
+
   if (
     effect.slowEnemiesTime > 0
   ) {
@@ -1421,6 +1438,10 @@ function updatePrizeSystem() {
   }
 
 
+  /* -------------------------
+     AMPLIACIÓN DEL RODILLO
+     ------------------------- */
+
   if (
     effect.rollerUpgrade > 0
   ) {
@@ -1430,6 +1451,10 @@ function updatePrizeSystem() {
     );
   }
 
+
+  /* -------------------------
+     EXPLOSIÓN DE PINTURA
+     ------------------------- */
 
   if (
     effect.paintResult
@@ -1443,8 +1468,6 @@ function updatePrizeSystem() {
 
   refreshHud();
 }
-
-
 /* =========================================================
    TEMPORIZADOR
    ========================================================= */
