@@ -71,11 +71,11 @@ const PRIZE_TYPES = Object.freeze({
    REGLAS DE PREMIOS
    ========================================================= */
 
-const FIRST_EXTRA_LIFE_LEVEL = 5;
-const EXTRA_LIFE_LEVEL_GAP = 6;
+const FIRST_EXTRA_LIFE_LEVEL = 6;
+const EXTRA_LIFE_LEVEL_GAP = 10;
 
-const FIRST_ROLLER_UPGRADE_LEVEL = 3;
-const ROLLER_UPGRADE_LEVEL_GAP = 6;
+const FIRST_ROLLER_UPGRADE_LEVEL = 5;
+const ROLLER_UPGRADE_LEVEL_GAP = 10;
 
 
 /*
