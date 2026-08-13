@@ -1355,7 +1355,9 @@ function updatePrizeSystem() {
   }
 
 
-  playPrizeSound();
+  playPrizeSound(
+    result.prize?.type
+  );
 
 
   const effect =
